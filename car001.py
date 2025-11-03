@@ -157,7 +157,8 @@ class EnhancedCarPricePredictor:
         self.encoders = {}
         self.feature_importance = {}
         self.is_trained = False
-        self.training_data = None
+        self.training_data = None  # Properly initialize training_data
+        self.training_records_count = 0
         
     def get_live_prices(self, brand, model):
         """Get live prices for car models with proper error handling"""
@@ -297,6 +298,7 @@ class EnhancedCarPricePredictor:
             self.model.fit(X, y)
             self.is_trained = True
             self.training_data = df_clean
+            self.training_records_count = len(df_clean)
             
             # Store feature importance
             self.feature_importance = dict(zip(features, self.model.feature_importances_))
@@ -531,11 +533,12 @@ def show_prediction_history():
             st.rerun()
     
     # Show chart of recent predictions
-    st.subheader("📈 Recent Prediction Trends")
-    recent_history = history_df.head(10)
-    fig = px.line(recent_history, x='timestamp', y='predicted_price', 
-                  title='Recent Price Predictions', markers=True)
-    st.plotly_chart(fig, use_container_width=True)
+    if len(history_df) > 1:
+        st.subheader("📈 Recent Prediction Trends")
+        recent_history = history_df.head(10)
+        fig = px.line(recent_history, x='timestamp', y='predicted_price', 
+                      title='Recent Price Predictions', markers=True)
+        st.plotly_chart(fig, use_container_width=True)
 
 # ========================================
 # CSV UPLOAD INTERFACE
@@ -794,8 +797,9 @@ def main():
         st.subheader("Model Status")
         if st.session_state.predictor.is_trained:
             st.success("✅ Model Trained")
-            if st.session_state.predictor.training_data is not None:
-                st.info(f"📊 Trained on {len(st.session_state.predictor.training_data)} records")
+            # Safe check for training_data
+            if hasattr(st.session_state.predictor, 'training_data') and st.session_state.predictor.training_data is not None:
+                st.info(f"📊 Trained on {st.session_state.predictor.training_records_count} records")
         else:
             st.warning("⚠️ Using Fallback Model")
     
