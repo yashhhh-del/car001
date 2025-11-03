@@ -198,6 +198,85 @@ CAR_DATABASE = {
         'engine_cc': [1969, 1969, 1969, 1969, 1969, 0, 1969, 1969, 1969],
         'power_hp': [250, 250, 197, 250, 300, 231, 250, 250, 400],
         'seats': [5, 5, 5, 5, 7, 5, 5, 5, 7]
+    },
+    # SUPER LUXURY CAR BRANDS
+    'Maserati': {
+        'models': ['Ghibli', 'Quattroporte', 'Levante', 'GranTurismo', 'MC20', 'GranCabrio'],
+        'car_types': ['Sedan', 'Sedan', 'SUV', 'Coupe', 'Sports', 'Convertible'],
+        'engine_cc': [2979, 2979, 2979, 4691, 2992, 4691],
+        'power_hp': [350, 424, 424, 454, 621, 454],
+        'seats': [5, 5, 5, 4, 2, 4]
+    },
+    'Bentley': {
+        'models': ['Continental GT', 'Flying Spur', 'Bentayga', 'Mulsanne', 'Azure', 'Brooklands'],
+        'car_types': ['Coupe', 'Sedan', 'SUV', 'Sedan', 'Convertible', 'Coupe'],
+        'engine_cc': [3993, 3993, 3993, 6750, 6750, 6750],
+        'power_hp': [542, 542, 542, 505, 457, 530],
+        'seats': [4, 5, 5, 5, 4, 4]
+    },
+    'Rolls-Royce': {
+        'models': ['Ghost', 'Phantom', 'Cullinan', 'Wraith', 'Dawn', 'Spectre'],
+        'car_types': ['Sedan', 'Sedan', 'SUV', 'Coupe', 'Convertible', 'Coupe'],
+        'engine_cc': [6749, 6749, 6749, 6592, 6592, 0],
+        'power_hp': [563, 563, 563, 624, 563, 577],
+        'seats': [5, 5, 5, 4, 4, 4]
+    },
+    'Lamborghini': {
+        'models': ['Huracan', 'Aventador', 'Urus', 'Gallardo', 'Murcielago', 'Revuelto'],
+        'car_types': ['Sports', 'Sports', 'SUV', 'Sports', 'Sports', 'Sports'],
+        'engine_cc': [5204, 6498, 3996, 5204, 6498, 6498],
+        'power_hp': [631, 740, 641, 562, 661, 1015],
+        'seats': [2, 2, 5, 2, 2, 2]
+    },
+    'Ferrari': {
+        'models': ['Portofino', 'Roma', 'F8 Tributo', 'SF90 Stradale', '812 Superfast', '296 GTB', 'Purosangue'],
+        'car_types': ['Convertible', 'Coupe', 'Coupe', 'Sports', 'Coupe', 'Sports', 'SUV'],
+        'engine_cc': [3855, 3855, 3902, 3990, 6496, 2992, 6496],
+        'power_hp': [612, 612, 710, 986, 789, 654, 715],
+        'seats': [2, 4, 2, 2, 2, 2, 4]
+    },
+    'Aston Martin': {
+        'models': ['DB11', 'Vantage', 'DBS Superleggera', 'DBX', 'Rapide', 'Valhalla', 'Valkyrie'],
+        'car_types': ['Coupe', 'Sports', 'Coupe', 'SUV', 'Sedan', 'Sports', 'Hypercar'],
+        'engine_cc': [3996, 3996, 5204, 3982, 5935, 3996, 6500],
+        'power_hp': [503, 503, 715, 542, 552, 937, 1160],
+        'seats': [4, 2, 2, 5, 4, 2, 2]
+    },
+    'McLaren': {
+        'models': ['720S', '570S', 'GT', 'Artura', 'P1', 'Senna', 'Elva'],
+        'car_types': ['Sports', 'Sports', 'Sports', 'Sports', 'Hypercar', 'Sports', 'Roadster'],
+        'engine_cc': [3994, 3799, 3994, 2993, 3799, 3994, 3994],
+        'power_hp': [710, 562, 612, 671, 903, 789, 804],
+        'seats': [2, 2, 2, 2, 2, 2, 2]
+    },
+    'Bugatti': {
+        'models': ['Chiron', 'Veyron', 'Divo', 'Centodieci', 'Bolide'],
+        'car_types': ['Hypercar', 'Hypercar', 'Hypercar', 'Hypercar', 'Track Car'],
+        'engine_cc': [7993, 7993, 7993, 7993, 7993],
+        'power_hp': [1500, 1001, 1500, 1600, 1600],
+        'seats': [2, 2, 2, 2, 2]
+    },
+    # VINTAGE CAR BRANDS
+    'Hindustan Motors': {
+        'models': ['Ambassador', 'Contessa', 'Landmaster', 'Trekker'],
+        'car_types': ['Sedan', 'Coupe', 'SUV', 'SUV'],
+        'engine_cc': [1489, 1489, 1817, 1817],
+        'power_hp': [50, 55, 60, 60],
+        'seats': [5, 4, 5, 5]
+    },
+    'Premier': {
+        'models': ['Padmini', '118NE', 'Sigma'],
+        'car_types': ['Hatchback', 'Sedan', 'Sedan'],
+        'engine_cc': [770, 1171, 1360],
+        'power_hp': [37, 55, 68],
+        'seats': [4, 5, 5]
+    },
+    'Standard': {
+        'models': ['Herald', 'Vanguard', 'Eight', 'Ten'],
+        'car_types': ['Convertible', 'Sedan', 'Sedan', 'Sedan'],
+        'engine_cc': [948, 2088, 1006, 1206],
+        'power_hp': [39, 68, 26, 33],
+        'seats': [4, 5, 4, 5]
     }
 }
 
@@ -328,12 +407,64 @@ class EnhancedCarPricePredictor:
                 }
             }
             
+            # Super luxury car price database
+            super_luxury_price_database = {
+                'Maserati': {
+                    'Ghibli': [8000000, 12000000, 16000000],
+                    'Quattroporte': [12000000, 18000000, 24000000],
+                    'Levante': [10000000, 15000000, 20000000],
+                    'GranTurismo': [15000000, 22000000, 30000000]
+                },
+                'Bentley': {
+                    'Continental GT': [25000000, 35000000, 45000000],
+                    'Flying Spur': [30000000, 40000000, 50000000],
+                    'Bentayga': [35000000, 45000000, 55000000]
+                },
+                'Rolls-Royce': {
+                    'Ghost': [50000000, 65000000, 80000000],
+                    'Phantom': [80000000, 100000000, 120000000],
+                    'Cullinan': [60000000, 80000000, 100000000]
+                },
+                'Lamborghini': {
+                    'Huracan': [30000000, 40000000, 50000000],
+                    'Aventador': [50000000, 70000000, 90000000],
+                    'Urus': [35000000, 45000000, 55000000]
+                },
+                'Ferrari': {
+                    'Portofino': [35000000, 45000000, 55000000],
+                    'F8 Tributo': [45000000, 60000000, 75000000],
+                    'SF90 Stradale': [70000000, 90000000, 110000000]
+                }
+            }
+            
+            # Vintage car price database
+            vintage_price_database = {
+                'Hindustan Motors': {
+                    'Ambassador': [50000, 150000, 300000],
+                    'Contessa': [80000, 200000, 400000]
+                },
+                'Premier': {
+                    'Padmini': [40000, 100000, 200000],
+                    '118NE': [60000, 150000, 250000]
+                },
+                'Standard': {
+                    'Herald': [100000, 250000, 500000],
+                    'Vanguard': [150000, 300000, 600000]
+                }
+            }
+            
             if brand in car_price_database and model in car_price_database[brand]:
                 prices = car_price_database[brand][model]
                 sources = ["Used Car Market Database"]
             elif brand in luxury_price_database and model in luxury_price_database[brand]:
                 prices = luxury_price_database[brand][model]
                 sources = ["Luxury Car Market Database"]
+            elif brand in super_luxury_price_database and model in super_luxury_price_database[brand]:
+                prices = super_luxury_price_database[brand][model]
+                sources = ["Super Luxury Car Market Database"]
+            elif brand in vintage_price_database and model in vintage_price_database[brand]:
+                prices = vintage_price_database[brand][model]
+                sources = ["Vintage Car Market Database"]
             else:
                 # Estimate based on car type
                 base_prices = {
@@ -342,7 +473,9 @@ class EnhancedCarPricePredictor:
                     'SUV': [400000, 650000, 900000],
                     'MUV': [350000, 550000, 750000],
                     'Sports': [5000000, 10000000, 20000000],
-                    'Hypercar': [50000000, 100000000, 200000000]
+                    'Hypercar': [50000000, 100000000, 200000000],
+                    'Coupe': [6000000, 12000000, 18000000],
+                    'Convertible': [7000000, 14000000, 21000000]
                 }
                 # Get car type for estimation
                 car_type = "Sedan"  # default
@@ -378,13 +511,15 @@ class EnhancedCarPricePredictor:
                 base_price = base_prices[1]  # Use average price
                 
                 # Generate multiple records with variations
-                for _ in range(15):  # Reduced from 20 to 15 for better performance
-                    year = np.random.randint(max(1990, current_year-20), current_year+1)
+                for _ in range(10):  # Reduced to 10 for better performance
+                    year = np.random.randint(max(1990, current_year-30), current_year+1)
                     age = current_year - year
                     
                     # FIXED: Ensure mileage range is valid
                     min_mileage = 1000
                     max_mileage = min(300000, max(15000 * age, 2000))  # Ensure max > min
+                    if max_mileage <= min_mileage:
+                        max_mileage = min_mileage + 1000
                     mileage = np.random.randint(min_mileage, max_mileage)
                     
                     # Condition probabilities
@@ -473,7 +608,10 @@ class EnhancedCarPricePredictor:
             'Skoda': 1.01, 'Renault': 1.0, 'Nissan': 1.0, 'MG': 1.03,
             'Ford': 1.0, 'BMW': 1.25, 'Mercedes-Benz': 1.28, 'Audi': 1.26,
             'Lexus': 1.22, 'Jaguar': 1.2, 'Land Rover': 1.23, 'Porsche': 1.35,
-            'Volvo': 1.18
+            'Volvo': 1.18, 'Maserati': 1.3, 'Bentley': 1.4, 'Rolls-Royce': 1.5,
+            'Lamborghini': 1.45, 'Ferrari': 1.48, 'Aston Martin': 1.38,
+            'McLaren': 1.42, 'Bugatti': 1.6, 'Hindustan Motors': 0.8,
+            'Premier': 0.75, 'Standard': 0.7
         }
         
         # Calculate final price
@@ -586,10 +724,19 @@ class EnhancedCarPricePredictor:
         # Age-based adjustment (non-linear depreciation)
         current_year = datetime.now().year
         age = current_year - input_data['Year']
-        if age > 10:
-            adjusted_price *= 0.9  # Additional discount for very old cars
-        elif age < 3:
-            adjusted_price *= 1.05  # Premium for nearly new cars
+        
+        # Vintage cars appreciation
+        vintage_brands = ['Hindustan Motors', 'Premier', 'Standard']
+        if input_data['Brand'] in vintage_brands and age > 25:
+            # Vintage cars appreciate after 25 years
+            appreciation_factor = 1.0 + (age - 25) * 0.03
+            adjusted_price *= appreciation_factor
+        else:
+            # Normal depreciation for other cars
+            if age > 10:
+                adjusted_price *= 0.9  # Additional discount for very old cars
+            elif age < 3:
+                adjusted_price *= 1.05  # Premium for nearly new cars
         
         # Mileage adjustment
         mileage = input_data['Mileage']
@@ -602,12 +749,21 @@ class EnhancedCarPricePredictor:
         luxury_brands = ['BMW', 'Mercedes-Benz', 'Audi', 'Lexus', 'Jaguar', 'Land Rover', 
                         'Porsche', 'Volvo']
         
+        super_luxury_brands = ['Maserati', 'Bentley', 'Rolls-Royce', 'Lamborghini', 
+                              'Ferrari', 'Aston Martin', 'McLaren', 'Bugatti']
+        
         if input_data['Brand'] in luxury_brands:
             # Luxury cars depreciate faster initially but hold value better later
             if age < 5:
                 adjusted_price *= 0.95
             else:
                 adjusted_price *= 1.02
+        elif input_data['Brand'] in super_luxury_brands:
+            # Super luxury cars have different depreciation patterns
+            if age < 3:
+                adjusted_price *= 0.9  # High initial depreciation
+            elif age > 10:
+                adjusted_price *= 1.1  # Classic appreciation
         
         return adjusted_price
 
@@ -622,11 +778,23 @@ def show_brand_statistics():
     total_brands = len(CAR_DATABASE)
     total_models = sum(len(CAR_DATABASE[brand]['models']) for brand in CAR_DATABASE)
     
+    # Count brands by category
+    regular_brands = ['Maruti Suzuki', 'Hyundai', 'Tata', 'Mahindra', 'Toyota', 'Honda', 
+                     'Kia', 'Volkswagen', 'Skoda', 'Renault', 'Nissan', 'MG', 'Ford']
+    luxury_brands = ['BMW', 'Mercedes-Benz', 'Audi', 'Lexus', 'Jaguar', 'Land Rover', 
+                    'Porsche', 'Volvo']
+    super_luxury_brands = ['Maserati', 'Bentley', 'Rolls-Royce', 'Lamborghini', 
+                          'Ferrari', 'Aston Martin', 'McLaren', 'Bugatti']
+    vintage_brands = ['Hindustan Motors', 'Premier', 'Standard']
+    
     st.sidebar.info(f"""
     **Database Overview:**
-    - 🚗 **Brands:** {total_brands}
-    - 🎯 **Models:** {total_models}
-    - 📊 **Coverage:** Comprehensive
+    - 🚗 **Total Brands:** {total_brands}
+    - 🎯 **Total Models:** {total_models}
+    - 🏷️ **Regular Brands:** {len(regular_brands)}
+    - 💎 **Luxury Brands:** {len(luxury_brands)}
+    - 👑 **Super Luxury:** {len(super_luxury_brands)}
+    - 🕰️ **Vintage Brands:** {len(vintage_brands)}
     """)
     
     # Brand distribution
@@ -642,7 +810,7 @@ def search_cars():
     st.sidebar.subheader("🔍 Search Cars")
     
     search_brand = st.sidebar.selectbox("Search by Brand", ["All"] + list(CAR_DATABASE.keys()))
-    search_type = st.sidebar.selectbox("Search by Type", ["All", "Hatchback", "Sedan", "SUV", "MUV"])
+    search_type = st.sidebar.selectbox("Search by Type", ["All", "Hatchback", "Sedan", "SUV", "MUV", "Sports", "Luxury"])
     
     if st.sidebar.button("Search"):
         results = []
@@ -713,7 +881,7 @@ def show_manual_input_form():
             seats = st.number_input("Seats", min_value=2, max_value=9, value=5)
         
         current_year = datetime.now().year
-        year = st.number_input("Manufacturing Year", min_value=1990, max_value=current_year, 
+        year = st.number_input("Manufacturing Year", min_value=1950, max_value=current_year, 
                              value=current_year-3, help="Year when car was manufactured")
         
         fuel_type = st.selectbox("Fuel Type", FUEL_TYPES)
@@ -820,6 +988,11 @@ def calculate_confidence(input_data):
     if input_data['Mileage'] > 100000:
         confidence -= 5
     
+    # Increase confidence for luxury cars (more stable pricing)
+    luxury_brands = ['BMW', 'Mercedes-Benz', 'Audi', 'Lexus', 'Jaguar', 'Land Rover']
+    if input_data['Brand'] in luxury_brands:
+        confidence += 3
+    
     return min(95, max(70, confidence))
 
 def show_price_breakdown(input_data, predicted_price, market_avg):
@@ -899,7 +1072,11 @@ def get_brand_factor(brand):
         'Mahindra': 12000,
         'BMW': 50000,
         'Mercedes-Benz': 60000,
-        'Audi': 45000
+        'Audi': 45000,
+        'Lamborghini': 200000,
+        'Ferrari': 250000,
+        'Rolls-Royce': 300000,
+        'Hindustan Motors': -10000
     }
     return factors.get(brand, 0)
 
@@ -984,7 +1161,7 @@ def show_car_comparison():
         brand1 = st.selectbox("Brand 1", list(CAR_DATABASE.keys()), key="brand1")
         if brand1 in CAR_DATABASE:
             model1 = st.selectbox("Model 1", CAR_DATABASE[brand1]['models'], key="model1")
-            year1 = st.number_input("Year 1", min_value=1990, max_value=datetime.now().year, value=2020, key="year1")
+            year1 = st.number_input("Year 1", min_value=1950, max_value=datetime.now().year, value=2020, key="year1")
             condition1 = st.selectbox("Condition 1", CAR_CONDITIONS, key="condition1")
             add_car1 = st.button("Add Car 1", key="add1")
             
@@ -1001,7 +1178,7 @@ def show_car_comparison():
         brand2 = st.selectbox("Brand 2", list(CAR_DATABASE.keys()), key="brand2")
         if brand2 in CAR_DATABASE:
             model2 = st.selectbox("Model 2", CAR_DATABASE[brand2]['models'], key="model2")
-            year2 = st.number_input("Year 2", min_value=1990, max_value=datetime.now().year, value=2019, key="year2")
+            year2 = st.number_input("Year 2", min_value=1950, max_value=datetime.now().year, value=2019, key="year2")
             condition2 = st.selectbox("Condition 2", CAR_CONDITIONS, key="condition2")
             add_car2 = st.button("Add Car 2", key="add2")
             
@@ -1018,7 +1195,7 @@ def show_car_comparison():
         brand3 = st.selectbox("Brand 3", list(CAR_DATABASE.keys()), key="brand3")
         if brand3 in CAR_DATABASE:
             model3 = st.selectbox("Model 3", CAR_DATABASE[brand3]['models'], key="model3")
-            year3 = st.number_input("Year 3", min_value=1990, max_value=datetime.now().year, value=2018, key="year3")
+            year3 = st.number_input("Year 3", min_value=1950, max_value=datetime.now().year, value=2018, key="year3")
             condition3 = st.selectbox("Condition 3", CAR_CONDITIONS, key="condition3")
             add_car3 = st.button("Add Car 3", key="add3")
             
@@ -1173,36 +1350,37 @@ def show_market_analysis():
     """Enhanced market analysis"""
     st.subheader("📈 Advanced Market Analysis")
     
-    # Price distribution by brand
-    brand_prices = {}
-    for brand in list(CAR_DATABASE.keys())[:15]:  # Limit to first 15 brands for performance
-        try:
-            prices, _ = st.session_state.predictor.get_enhanced_live_prices(brand, CAR_DATABASE[brand]['models'][0])
-            brand_prices[brand] = prices[1]  # Use average price
-        except:
-            continue
+    # Price distribution by brand category
+    st.write("### Price Ranges by Car Category")
     
-    if brand_prices:
-        fig = px.bar(x=list(brand_prices.keys()), y=list(brand_prices.values()),
-                    title="Average Price by Brand", labels={'x': 'Brand', 'y': 'Price (₹)'})
+    categories = {
+        'Regular Cars': ['Maruti Suzuki', 'Hyundai', 'Tata', 'Mahindra', 'Toyota', 'Honda'],
+        'Luxury Cars': ['BMW', 'Mercedes-Benz', 'Audi', 'Lexus', 'Jaguar'],
+        'Super Luxury': ['Maserati', 'Bentley', 'Rolls-Royce', 'Lamborghini', 'Ferrari'],
+        'Vintage Cars': ['Hindustan Motors', 'Premier', 'Standard']
+    }
+    
+    category_prices = {}
+    
+    for category, brands in categories.items():
+        prices = []
+        for brand in brands:
+            if brand in CAR_DATABASE:
+                try:
+                    model = CAR_DATABASE[brand]['models'][0]
+                    price_data, _ = st.session_state.predictor.get_enhanced_live_prices(brand, model)
+                    prices.append(price_data[1])  # Average price
+                except:
+                    continue
+        if prices:
+            category_prices[category] = sum(prices) / len(prices)
+    
+    if category_prices:
+        fig = px.bar(x=list(category_prices.keys()), y=list(category_prices.values()),
+                    title="Average Price by Car Category", 
+                    labels={'x': 'Category', 'y': 'Average Price (₹)'},
+                    color=list(category_prices.keys()))
         st.plotly_chart(fig, use_container_width=True)
-
-def show_model_training():
-    """Model training interface"""
-    st.subheader("🤖 AI Model Training")
-    
-    st.info("""
-    **Enhanced Machine Learning Features:**
-    - Ensemble Learning (Random Forest)
-    - Comprehensive Synthetic Training Data
-    - Realistic Price Calculation Algorithms
-    - Business Rules Integration
-    - Confidence Scoring
-    """)
-    
-    if st.button("🚀 Train Advanced Model", type="primary"):
-        with st.spinner("Creating comprehensive training dataset and training AI models..."):
-            st.session_state.predictor.train_model()
 
 # ========================================
 # MAIN APPLICATION
@@ -1235,8 +1413,7 @@ def main():
             "Advanced Price Prediction", 
             "Car Comparison", 
             "Search History",
-            "Market Analysis", 
-            "Model Training"
+            "Market Analysis"
         ])
         
         st.markdown("---")
@@ -1248,10 +1425,12 @@ def main():
         st.success("✅ Car Comparison")
         st.success("✅ Search History")
         
-        if page == "Model Training":
-            if st.button("🔄 Train Enhanced Model", use_container_width=True):
-                with st.spinner("Training advanced AI model..."):
-                    st.session_state.predictor.train_model()
+        st.markdown("---")
+        st.subheader("Car Categories")
+        st.info("🚗 Regular Cars")
+        st.info("💎 Luxury Cars") 
+        st.info("👑 Super Luxury")
+        st.info("🕰️ Vintage Cars")
     
     if page == "Advanced Price Prediction":
         show_enhanced_prediction_interface()
@@ -1264,9 +1443,6 @@ def main():
     
     elif page == "Market Analysis":
         show_market_analysis()
-    
-    elif page == "Model Training":
-        show_model_training()
 
 if __name__ == "__main__":
     main()
