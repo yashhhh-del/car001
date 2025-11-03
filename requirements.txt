@@ -12,5 +12,7 @@ joblib
 Jinja2
 fake-useragent
 html5lib
+openpyxl
+
 
 
