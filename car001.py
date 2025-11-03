@@ -97,7 +97,7 @@ CAR_DATABASE = {
         'car_types': ['SUV', 'SUV', 'MUV', 'MUV', 'SUV'],
         'engine_cc': [1353, 998, 1482, 2199, 0],
         'power_hp': [140, 120, 115, 200, 229],
-        'seats': [5, 5, 6, 7, 5]
+        'seats': [5, 5, 5, 6, 7, 5]
     },
     'Volkswagen': {
         'models': ['Polo', 'Vento', 'Taigun', 'Virtus', 'Tiguan', 'T-Roc'],
@@ -481,7 +481,7 @@ class EnhancedCarPricePredictor:
                 seats = CAR_DATABASE[brand]['seats'][i]
                 
                 # Get base price range for this model
-                base_prices, _ = get_enhanced_live_prices(brand, model)
+                base_prices, _ = self.get_enhanced_live_prices(brand, model)
                 base_price = base_prices[1]  # Use average price
                 
                 # Generate multiple records with variations
@@ -717,158 +717,144 @@ class EnhancedCarPricePredictor:
         
         return adjusted_price
 
-# ========================================
-# REAL-TIME WEB SCRAPING FOR LIVE PRICES
-# ========================================
-
-def get_real_time_prices(brand, model):
-    """Get real-time prices from various car websites"""
-    try:
-        # Try enhanced database first for reliability
-        return get_enhanced_live_prices(brand, model)
-    except:
-        # Fallback to basic pricing
-        return [300000, 500000, 800000], ["Market Estimate"]
-
-@st.cache_data(ttl=3600)
-def get_enhanced_live_prices(brand, model):
-    """Get enhanced live prices for all car models"""
-    
-    # Comprehensive price database
-    car_price_database = {
-        'Maruti Suzuki': {
-            'Alto': [150000, 250000, 350000],
-            'Swift': [300000, 450000, 600000],
-            'Baleno': [350000, 500000, 700000],
-            'Dzire': [320000, 480000, 650000],
-            'Vitara Brezza': [500000, 700000, 900000],
-            'Ertiga': [450000, 650000, 850000],
-            'Wagon R': [200000, 300000, 400000],
-            'Celerio': [250000, 350000, 450000],
-            'Ciaz': [450000, 650000, 850000],
-            'S-Presso': [280000, 380000, 480000],
-            'Ignis': [320000, 450000, 580000],
-            'XL6': [550000, 750000, 950000],
-            'Grand Vitara': [800000, 1100000, 1400000],
-            'Fronx': [450000, 600000, 800000],
-            'Jimny': [600000, 800000, 1000000]
-        },
-        'Hyundai': {
-            'i10': [250000, 350000, 450000],
-            'i20': [350000, 500000, 650000],
-            'Creta': [600000, 850000, 1100000],
-            'Verna': [450000, 650000, 850000],
-            'Venue': [450000, 600000, 800000],
-            'Aura': [320000, 450000, 580000],
-            'Alcazar': [800000, 1100000, 1400000],
-            'Tucson': [1200000, 1600000, 2000000],
-            'Grand i10 Nios': [300000, 420000, 550000]
-        },
-        'Tata': {
-            'Tiago': [250000, 350000, 450000],
-            'Nexon': [450000, 650000, 850000],
-            'Altroz': [350000, 500000, 650000],
-            'Harrier': [800000, 1100000, 1400000],
-            'Safari': [900000, 1200000, 1500000],
-            'Punch': [300000, 450000, 600000],
-            'Tigor': [280000, 400000, 520000]
-        },
-        'Mahindra': {
-            'Scorpio': [500000, 700000, 900000],
-            'XUV300': [450000, 600000, 800000],
-            'XUV700': [900000, 1200000, 1500000],
-            'Thar': [600000, 850000, 1100000],
-            'Bolero': [300000, 450000, 600000],
-            'Marazzo': [500000, 700000, 900000]
-        },
-        'Toyota': {
-            'Innova Crysta': [1000000, 1400000, 1800000],
-            'Fortuner': [1500000, 2000000, 2500000],
-            'Glanza': [350000, 500000, 650000],
-            'Urban Cruiser Hyryder': [600000, 800000, 1000000],
-            'Camry': [1800000, 2300000, 2800000]
-        },
-        'Honda': {
-            'City': [450000, 650000, 850000],
-            'Amaze': [350000, 500000, 650000],
-            'WR-V': [400000, 550000, 700000],
-            'Elevate': [600000, 800000, 1000000]
-        },
-        'Kia': {
-            'Seltos': [600000, 800000, 1000000],
-            'Sonet': [450000, 600000, 800000],
-            'Carens': [650000, 850000, 1100000]
-        },
-        'Volkswagen': {
-            'Polo': [350000, 500000, 650000],
-            'Vento': [400000, 550000, 700000],
-            'Taigun': [600000, 800000, 1000000],
-            'Virtus': [550000, 750000, 950000]
-        }
-    }
-    
-    # Luxury car price database
-    luxury_price_database = {
-        'BMW': {
-            '3 Series': [1800000, 2500000, 3500000],
-            '5 Series': [3000000, 4000000, 5500000],
-            '7 Series': [6000000, 8500000, 12000000],
-            'X1': [2500000, 3500000, 4500000],
-            'X3': [3500000, 5000000, 6500000],
-            'X5': [5500000, 7500000, 9500000],
-            'X7': [8000000, 11000000, 14000000]
-        },
-        'Mercedes-Benz': {
-            'A-Class': [2200000, 3000000, 4000000],
-            'C-Class': [2800000, 4000000, 5500000],
-            'E-Class': [4500000, 6000000, 8000000],
-            'S-Class': [8000000, 12000000, 16000000],
-            'GLA': [2500000, 3500000, 4800000],
-            'GLC': [4000000, 5500000, 7500000],
-            'GLE': [5500000, 7500000, 10000000]
-        },
-        'Audi': {
-            'A3': [2000000, 2800000, 3800000],
-            'A4': [3000000, 4200000, 5500000],
-            'A6': [4500000, 6000000, 8000000],
-            'A8': [7500000, 10000000, 13000000],
-            'Q3': [2800000, 3800000, 5000000],
-            'Q5': [4000000, 5500000, 7000000],
-            'Q7': [6000000, 8000000, 11000000]
-        }
-    }
-    
-    try:
-        if brand in car_price_database and model in car_price_database[brand]:
-            prices = car_price_database[brand][model]
-            sources = ["Used Car Market Database"]
-        elif brand in luxury_price_database and model in luxury_price_database[brand]:
-            prices = luxury_price_database[brand][model]
-            sources = ["Luxury Car Market Database"]
-        else:
-            # Estimate based on car type
-            base_prices = {
-                'Hatchback': [200000, 350000, 500000],
-                'Sedan': [300000, 500000, 700000],
-                'SUV': [400000, 650000, 900000],
-                'MUV': [350000, 550000, 750000],
-                'Sports': [5000000, 10000000, 20000000],
-                'Hypercar': [50000000, 100000000, 200000000]
+    def get_enhanced_live_prices(self, brand, model):
+        """Get enhanced live prices for all car models"""
+        
+        # Comprehensive price database
+        car_price_database = {
+            'Maruti Suzuki': {
+                'Alto': [150000, 250000, 350000],
+                'Swift': [300000, 450000, 600000],
+                'Baleno': [350000, 500000, 700000],
+                'Dzire': [320000, 480000, 650000],
+                'Vitara Brezza': [500000, 700000, 900000],
+                'Ertiga': [450000, 650000, 850000],
+                'Wagon R': [200000, 300000, 400000],
+                'Celerio': [250000, 350000, 450000],
+                'Ciaz': [450000, 650000, 850000],
+                'S-Presso': [280000, 380000, 480000],
+                'Ignis': [320000, 450000, 580000],
+                'XL6': [550000, 750000, 950000],
+                'Grand Vitara': [800000, 1100000, 1400000],
+                'Fronx': [450000, 600000, 800000],
+                'Jimny': [600000, 800000, 1000000]
+            },
+            'Hyundai': {
+                'i10': [250000, 350000, 450000],
+                'i20': [350000, 500000, 650000],
+                'Creta': [600000, 850000, 1100000],
+                'Verna': [450000, 650000, 850000],
+                'Venue': [450000, 600000, 800000],
+                'Aura': [320000, 450000, 580000],
+                'Alcazar': [800000, 1100000, 1400000],
+                'Tucson': [1200000, 1600000, 2000000],
+                'Grand i10 Nios': [300000, 420000, 550000]
+            },
+            'Tata': {
+                'Tiago': [250000, 350000, 450000],
+                'Nexon': [450000, 650000, 850000],
+                'Altroz': [350000, 500000, 650000],
+                'Harrier': [800000, 1100000, 1400000],
+                'Safari': [900000, 1200000, 1500000],
+                'Punch': [300000, 450000, 600000],
+                'Tigor': [280000, 400000, 520000]
+            },
+            'Mahindra': {
+                'Scorpio': [500000, 700000, 900000],
+                'XUV300': [450000, 600000, 800000],
+                'XUV700': [900000, 1200000, 1500000],
+                'Thar': [600000, 850000, 1100000],
+                'Bolero': [300000, 450000, 600000],
+                'Marazzo': [500000, 700000, 900000]
+            },
+            'Toyota': {
+                'Innova Crysta': [1000000, 1400000, 1800000],
+                'Fortuner': [1500000, 2000000, 2500000],
+                'Glanza': [350000, 500000, 650000],
+                'Urban Cruiser Hyryder': [600000, 800000, 1000000],
+                'Camry': [1800000, 2300000, 2800000]
+            },
+            'Honda': {
+                'City': [450000, 650000, 850000],
+                'Amaze': [350000, 500000, 650000],
+                'WR-V': [400000, 550000, 700000],
+                'Elevate': [600000, 800000, 1000000]
+            },
+            'Kia': {
+                'Seltos': [600000, 800000, 1000000],
+                'Sonet': [450000, 600000, 800000],
+                'Carens': [650000, 850000, 1100000]
+            },
+            'Volkswagen': {
+                'Polo': [350000, 500000, 650000],
+                'Vento': [400000, 550000, 700000],
+                'Taigun': [600000, 800000, 1000000],
+                'Virtus': [550000, 750000, 950000]
             }
-            # Get car type for estimation
-            car_type = "Sedan"  # default
-            if brand in CAR_DATABASE and model in CAR_DATABASE[brand]['models']:
-                model_index = CAR_DATABASE[brand]['models'].index(model)
-                car_type = CAR_DATABASE[brand]['car_types'][model_index]
-            
-            prices = base_prices.get(car_type, [300000, 500000, 800000])
-            sources = ["Market Estimate"]
-            
-    except Exception as e:
-        prices = [300000, 500000, 800000]
-        sources = ["General Market Average"]
-    
-    return prices, sources
+        }
+        
+        # Luxury car price database
+        luxury_price_database = {
+            'BMW': {
+                '3 Series': [1800000, 2500000, 3500000],
+                '5 Series': [3000000, 4000000, 5500000],
+                '7 Series': [6000000, 8500000, 12000000],
+                'X1': [2500000, 3500000, 4500000],
+                'X3': [3500000, 5000000, 6500000],
+                'X5': [5500000, 7500000, 9500000],
+                'X7': [8000000, 11000000, 14000000]
+            },
+            'Mercedes-Benz': {
+                'A-Class': [2200000, 3000000, 4000000],
+                'C-Class': [2800000, 4000000, 5500000],
+                'E-Class': [4500000, 6000000, 8000000],
+                'S-Class': [8000000, 12000000, 16000000],
+                'GLA': [2500000, 3500000, 4800000],
+                'GLC': [4000000, 5500000, 7500000],
+                'GLE': [5500000, 7500000, 10000000]
+            },
+            'Audi': {
+                'A3': [2000000, 2800000, 3800000],
+                'A4': [3000000, 4200000, 5500000],
+                'A6': [4500000, 6000000, 8000000],
+                'A8': [7500000, 10000000, 13000000],
+                'Q3': [2800000, 3800000, 5000000],
+                'Q5': [4000000, 5500000, 7000000],
+                'Q7': [6000000, 8000000, 11000000]
+            }
+        }
+        
+        try:
+            if brand in car_price_database and model in car_price_database[brand]:
+                prices = car_price_database[brand][model]
+                sources = ["Used Car Market Database"]
+            elif brand in luxury_price_database and model in luxury_price_database[brand]:
+                prices = luxury_price_database[brand][model]
+                sources = ["Luxury Car Market Database"]
+            else:
+                # Estimate based on car type
+                base_prices = {
+                    'Hatchback': [200000, 350000, 500000],
+                    'Sedan': [300000, 500000, 700000],
+                    'SUV': [400000, 650000, 900000],
+                    'MUV': [350000, 550000, 750000],
+                    'Sports': [5000000, 10000000, 20000000],
+                    'Hypercar': [50000000, 100000000, 200000000]
+                }
+                # Get car type for estimation
+                car_type = "Sedan"  # default
+                if brand in CAR_DATABASE and model in CAR_DATABASE[brand]['models']:
+                    model_index = CAR_DATABASE[brand]['models'].index(model)
+                    car_type = CAR_DATABASE[brand]['car_types'][model_index]
+                
+                prices = base_prices.get(car_type, [300000, 500000, 800000])
+                sources = ["Market Estimate"]
+                
+        except Exception as e:
+            prices = [300000, 500000, 800000]
+            sources = ["General Market Average"]
+        
+        return prices, sources
 
 # ========================================
 # ENHANCED PRICE PREDICTION INTERFACE
@@ -895,7 +881,7 @@ def show_enhanced_prediction_interface():
             
             if brand and model:
                 with st.spinner('🔍 Analyzing market trends...'):
-                    prices, sources = get_real_time_prices(brand, model)
+                    prices, sources = st.session_state.predictor.get_enhanced_live_prices(brand, model)
                     min_price, avg_price, max_price = prices
                 
                 # Display market intelligence
@@ -1048,8 +1034,9 @@ def show_brand_explorer():
             st.info(f"**{selected_brand}** has **{len(CAR_DATABASE[selected_brand]['models'])}** models")
             
             # Show price range for brand
-            prices, _ = get_enhanced_live_prices(selected_brand, CAR_DATABASE[selected_brand]['models'][0])
-            st.metric("Starting Price", f"₹{prices[0]:,.0f}")
+            if 'predictor' in st.session_state:
+                prices, _ = st.session_state.predictor.get_enhanced_live_prices(selected_brand, CAR_DATABASE[selected_brand]['models'][0])
+                st.metric("Starting Price", f"₹{prices[0]:,.0f}")
 
     with col2:
         if selected_brand in CAR_DATABASE:
@@ -1074,8 +1061,9 @@ def show_market_analysis():
     brand_prices = {}
     for brand in list(CAR_DATABASE.keys())[:15]:  # Limit to first 15 brands for performance
         try:
-            prices, _ = get_enhanced_live_prices(brand, CAR_DATABASE[brand]['models'][0])
-            brand_prices[brand] = prices[1]  # Use average price
+            if 'predictor' in st.session_state:
+                prices, _ = st.session_state.predictor.get_enhanced_live_prices(brand, CAR_DATABASE[brand]['models'][0])
+                brand_prices[brand] = prices[1]  # Use average price
         except:
             continue
     
@@ -1099,6 +1087,8 @@ def show_model_training():
     
     if st.button("🚀 Train Advanced Model", type="primary"):
         with st.spinner("Creating comprehensive training dataset and training AI models..."):
+            if 'predictor' not in st.session_state:
+                st.session_state.predictor = EnhancedCarPricePredictor()
             st.session_state.predictor.train_model()
 
 # ========================================
