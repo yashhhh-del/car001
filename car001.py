@@ -430,12 +430,15 @@ class EnhancedCarPricePredictor:
                     year = np.random.randint(max(1990, current_year-20), current_year+1)
                     age = current_year - year
                     
-                    # FIX: Ensure upper bound is always greater than lower bound
-                    max_mileage = max(5000, min(300000, 15000 * max(1, age)))
-                    if max_mileage > 1000:
-                        mileage = np.random.randint(1000, max_mileage)
+                    # FIX: Ensure mileage calculation is always valid
+                    if age == 0:
+                        # Brand new car
+                        mileage = np.random.randint(10, 1000)
                     else:
-                        mileage = np.random.randint(100, 5000)
+                        # Used car
+                        max_mileage = min(300000, 15000 * age)
+                        min_mileage = min(1000, max_mileage - 1000)
+                        mileage = np.random.randint(min_mileage, max_mileage + 1)
                     
                     # Condition probabilities
                     condition_weights = [0.1, 0.2, 0.4, 0.2, 0.1]  # More 'Good' condition cars
