@@ -960,6 +960,68 @@ def get_brand_factor(brand):
     return factors.get(brand, 0)
 
 # ========================================
+# SEARCH HISTORY FEATURE
+# ========================================
+
+def show_search_history():
+    """Show search history of previous car searches"""
+    st.subheader("📋 Search History")
+    
+    # Initialize search history in session state if not exists
+    if 'search_history' not in st.session_state:
+        st.session_state.search_history = []
+    
+    if not st.session_state.search_history:
+        st.info("No search history yet. Start searching for cars to see your history here.")
+        return
+    
+    # Show search history in reverse order (newest first)
+    st.write(f"**Total Searches:** {len(st.session_state.search_history)}")
+    
+    # Convert to dataframe for better display
+    history_df = pd.DataFrame(st.session_state.search_history[::-1])  # Reverse to show newest first
+    
+    # Display history
+    st.dataframe(history_df, use_container_width=True)
+    
+    # Show some statistics
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        most_searched_brand = history_df['Brand'].mode()[0] if not history_df.empty else "N/A"
+        st.metric("Most Searched Brand", most_searched_brand)
+    
+    with col2:
+        total_unique_cars = history_df[['Brand', 'Model']].drop_duplicates().shape[0]
+        st.metric("Unique Cars Searched", total_unique_cars)
+    
+    with col3:
+        if st.button("Clear History"):
+            st.session_state.search_history = []
+            st.rerun()
+
+def add_to_search_history(brand, model, predicted_price, market_avg, confidence):
+    """Add current search to history"""
+    if 'search_history' not in st.session_state:
+        st.session_state.search_history = []
+    
+    search_entry = {
+        'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'Brand': brand,
+        'Model': model,
+        'Predicted Price': f"₹{predicted_price:,.0f}",
+        'Market Average': f"₹{market_avg:,.0f}",
+        'Confidence': f"{confidence}%",
+        'Price Difference': f"₹{predicted_price - market_avg:,.0f}"
+    }
+    
+    st.session_state.search_history.append(search_entry)
+    
+    # Keep only last 50 searches to prevent memory issues
+    if len(st.session_state.search_history) > 50:
+        st.session_state.search_history = st.session_state.search_history[-50:]
+
+# ========================================
 # CSV UPLOAD FEATURE
 # ========================================
 
@@ -1204,44 +1266,6 @@ def show_car_comparison():
                          title='Value Score (Higher is Better)',
                          color='Value Score')
             st.plotly_chart(fig2, use_container_width=True)
-            
-            # Specifications radar chart
-            st.subheader("🎯 Specifications Radar Chart")
-            
-            # Normalize specifications for radar chart
-            specs_data = []
-            for car in comparison_data:
-                specs_data.append({
-                    'Car': f"{car['Brand']} {car['Model']}",
-                    'Engine Power': car['Power (HP)'] / 500,  # Normalize
-                    'Seating Capacity': car['Seats'] / 8,     # Normalize
-                    'Condition Score': {'Excellent': 1, 'Very Good': 0.8, 'Good': 0.6, 'Fair': 0.4, 'Poor': 0.2}[car['Condition']],
-                    'Value for Money': car['Value Score'] / 100
-                })
-            
-            if len(specs_data) >= 2:
-                fig3 = go.Figure()
-                
-                for car_specs in specs_data:
-                    fig3.add_trace(go.Scatterpolar(
-                        r=[car_specs['Engine Power'], car_specs['Seating Capacity'], 
-                           car_specs['Condition Score'], car_specs['Value for Money']],
-                        theta=['Engine Power', 'Seating Capacity', 'Condition Score', 'Value for Money'],
-                        fill='toself',
-                        name=car_specs['Car']
-                    ))
-                
-                fig3.update_layout(
-                    polar=dict(
-                        radialaxis=dict(
-                            visible=True,
-                            range=[0, 1]
-                        )),
-                    showlegend=True,
-                    title="Specifications Radar Chart"
-                )
-                
-                st.plotly_chart(fig3, use_container_width=True)
 
 # ========================================
 # MAIN INTERFACE FUNCTIONS
@@ -1298,41 +1322,13 @@ def show_enhanced_prediction_interface():
                     st.success(f"**Recommended Price: ₹{predicted_price:,.0f}**")
                     st.metric("Confidence Level", f"{confidence}%")
                     
+                    # Add to search history
+                    add_to_search_history(brand, model, predicted_price, avg_price, confidence)
+                    
                     # Price justification
                     show_price_breakdown(input_data, predicted_price, avg_price)
                     
                     st.balloons()
-
-def show_brand_explorer():
-    """Enhanced brand explorer"""
-    st.subheader("🔍 Car Brand & Model Explorer")
-    
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        selected_brand = st.selectbox("Select Brand", list(CAR_DATABASE.keys()))
-        
-        if selected_brand in CAR_DATABASE:
-            st.info(f"**{selected_brand}** has **{len(CAR_DATABASE[selected_brand]['models'])}** models")
-            
-            # Show price range for brand
-            prices, _ = st.session_state.predictor.get_enhanced_live_prices(selected_brand, CAR_DATABASE[selected_brand]['models'][0])
-            st.metric("Starting Price", f"₹{prices[0]:,.0f}")
-
-    with col2:
-        if selected_brand in CAR_DATABASE:
-            models_data = []
-            for i, model in enumerate(CAR_DATABASE[selected_brand]['models']):
-                models_data.append({
-                    'Model': model,
-                    'Type': CAR_DATABASE[selected_brand]['car_types'][i],
-                    'Engine (cc)': CAR_DATABASE[selected_brand]['engine_cc'][i],
-                    'Power (HP)': CAR_DATABASE[selected_brand]['power_hp'][i],
-                    'Seats': CAR_DATABASE[selected_brand]['seats'][i]
-                })
-            
-            df_models = pd.DataFrame(models_data)
-            st.dataframe(df_models, use_container_width=True)
 
 def show_market_analysis():
     """Enhanced market analysis"""
@@ -1400,7 +1396,7 @@ def main():
             "Advanced Price Prediction", 
             "CSV Upload & Bulk Prediction", 
             "Car Comparison", 
-            "Brand Explorer", 
+            "Search History",
             "Market Analysis", 
             "Model Training"
         ])
@@ -1413,6 +1409,7 @@ def main():
         st.success("✅ Confidence Scoring")
         st.success("✅ CSV Bulk Processing")
         st.success("✅ Car Comparison")
+        st.success("✅ Search History")
         
         if page == "Model Training":
             if st.button("🔄 Train Enhanced Model", use_container_width=True):
@@ -1428,8 +1425,8 @@ def main():
     elif page == "Car Comparison":
         show_car_comparison()
     
-    elif page == "Brand Explorer":
-        show_brand_explorer()
+    elif page == "Search History":
+        show_search_history()
     
     elif page == "Market Analysis":
         show_market_analysis()
