@@ -522,8 +522,13 @@ class IndianCarPricePredictor:
             fair_price = int(fair_price * 1.08)
         
         # Use dataset reference if available and reasonable
-        if dataset_reference and abs(dataset_reference - fair_price) / fair_price < 0.3:
-            fair_price = int((fair_price + dataset_reference) / 2)
+        if dataset_reference and not pd.isna(dataset_reference):
+            try:
+                dataset_reference = float(dataset_reference)
+                if abs(dataset_reference - fair_price) / fair_price < 0.3:
+                    fair_price = int((fair_price + dataset_reference) / 2)
+            except:
+                pass
         
         # Calculate min and max range
         min_price = int(fair_price * 0.88)
@@ -675,17 +680,18 @@ def main():
         st.markdown("---")
         
         if st.button("🎯 **PREDICT PRICE**", type="primary", use_container_width=True):
-            with st.spinner("🔄 Analyzing market data..."):
-                # Get prediction
-                min_price, fair_price, max_price, base_price = st.session_state.predictor.predict_price(
-                    brand, model, year, km_driven, fuel_type, transmission, 
-                    ownership, condition, city
-                )
-                
-                # Get factors
-                factors = st.session_state.predictor.get_pricing_factors(
-                    brand, model, year, km_driven, ownership, condition, city
-                )
+            try:
+                with st.spinner("🔄 Analyzing market data..."):
+                    # Get prediction
+                    min_price, fair_price, max_price, base_price = st.session_state.predictor.predict_price(
+                        brand, model, year, km_driven, fuel_type, transmission, 
+                        ownership, condition, city
+                    )
+                    
+                    # Get factors
+                    factors = st.session_state.predictor.get_pricing_factors(
+                        brand, model, year, km_driven, ownership, condition, city
+                    )
                 
                 # Display Results
                 st.success("✅ **Price Analysis Complete!**")
@@ -756,6 +762,11 @@ def main():
                 """)
                 
                 st.balloons()
+                
+            except Exception as e:
+                st.error(f"❌ Error during prediction: {str(e)}")
+                st.info("💡 Please check all input values and try again.")
+                st.exception(e)  # Show detailed error in development
     
     # ========================================
     # TAB 2: COMPARE CARS
@@ -798,64 +809,77 @@ def main():
                 })
         
         if st.button("⚖️ **COMPARE ALL CARS**", type="primary", use_container_width=True):
-            with st.spinner("🔄 Analyzing all vehicles..."):
-                results = []
-                
-                for idx, car in enumerate(comparison_data):
-                    min_p, fair_p, max_p, base_p = st.session_state.predictor.predict_price(
-                        car['brand'], car['model'], car['year'], car['km'],
-                        car['fuel'], car['trans'], car['owner'], car['cond'], car['city']
-                    )
+            try:
+                with st.spinner("🔄 Analyzing all vehicles..."):
+                    results = []
                     
-                    # Calculate value score
-                    if car['asking'] <= fair_p:
-                        value_score = "✅ Great Deal"
-                        diff = fair_p - car['asking']
-                    elif car['asking'] <= max_p:
-                        value_score = "👍 Fair Price"
-                        diff = max_p - car['asking']
-                    else:
-                        value_score = "❌ Overpriced"
-                        diff = car['asking'] - max_p
-                    
-                    results.append({
-                        'Car': f"{car['brand']} {car['model']}",
-                        'Year': car['year'],
-                        'KM': f"{car['km']:,}",
-                        'Fuel': car['fuel'],
-                        'Owner': car['owner'],
-                        'Asking Price': format_currency(car['asking']),
-                        'Fair Price': format_currency(fair_p),
-                        'Difference': format_currency(abs(diff)),
-                        'Conclusion': value_score,
-                        'fair_price_num': fair_p,
-                        'asking_num': car['asking']
-                    })
+                    for idx, car in enumerate(comparison_data):
+                        try:
+                            min_p, fair_p, max_p, base_p = st.session_state.predictor.predict_price(
+                                car['brand'], car['model'], car['year'], car['km'],
+                                car['fuel'], car['trans'], car['owner'], car['cond'], car['city']
+                            )
+                            
+                            # Calculate value score
+                            if car['asking'] <= fair_p:
+                                value_score = "✅ Great Deal"
+                                diff = fair_p - car['asking']
+                            elif car['asking'] <= max_p:
+                                value_score = "👍 Fair Price"
+                                diff = max_p - car['asking']
+                            else:
+                                value_score = "❌ Overpriced"
+                                diff = car['asking'] - max_p
+                            
+                            results.append({
+                                'Car': f"{car['brand']} {car['model']}",
+                                'Year': car['year'],
+                                'KM': f"{car['km']:,}",
+                                'Fuel': car['fuel'],
+                                'Owner': car['owner'],
+                                'Asking Price': format_currency(car['asking']),
+                                'Fair Price': format_currency(fair_p),
+                                'Difference': format_currency(abs(diff)),
+                                'Conclusion': value_score,
+                                'fair_price_num': fair_p,
+                                'asking_num': car['asking']
+                            })
+                        except Exception as e:
+                            st.warning(f"⚠️ Could not analyze Car {idx+1}: {str(e)}")
+                            continue
                 
                 # Display comparison table
-                st.markdown("### 📊 Comparison Results")
-                df_display = pd.DataFrame(results).drop(['fair_price_num', 'asking_num'], axis=1)
-                st.dataframe(df_display, use_container_width=True, hide_index=True)
-                
-                st.markdown("---")
-                
-                # Find best value
-                best_value = min(results, key=lambda x: x['asking_num'] - x['fair_price_num'])
-                
-                st.markdown("### 🏆 Best Value Car")
-                st.success(f"""
-                **Recommended: {best_value['Car']} ({best_value['Year']})**
-                
-                **Why it's the best choice:**
-                - Asking Price: {best_value['Asking Price']}
-                - Fair Market Value: {best_value['Fair Price']}
-                - Verdict: {best_value['Conclusion']}
-                - **Potential Savings:** {best_value['Difference']} below market value
-                
-                This car offers the best value-for-money among all compared options!
-                """)
-                
-                st.balloons()
+                if len(results) > 0:
+                    st.markdown("### 📊 Comparison Results")
+                    df_display = pd.DataFrame(results).drop(['fair_price_num', 'asking_num'], axis=1)
+                    st.dataframe(df_display, use_container_width=True, hide_index=True)
+                    
+                    st.markdown("---")
+                    
+                    # Find best value
+                    best_value = min(results, key=lambda x: x['asking_num'] - x['fair_price_num'])
+                    
+                    st.markdown("### 🏆 Best Value Car")
+                    st.success(f"""
+                    **Recommended: {best_value['Car']} ({best_value['Year']})**
+                    
+                    **Why it's the best choice:**
+                    - Asking Price: {best_value['Asking Price']}
+                    - Fair Market Value: {best_value['Fair Price']}
+                    - Verdict: {best_value['Conclusion']}
+                    - **Potential Savings:** {best_value['Difference']} below market value
+                    
+                    This car offers the best value-for-money among all compared options!
+                    """)
+                    
+                    st.balloons()
+                else:
+                    st.error("❌ Could not analyze any cars. Please check your inputs.")
+                    
+            except Exception as e:
+                st.error(f"❌ Error during comparison: {str(e)}")
+                st.info("💡 Please check all input values and try again.")
+                st.exception(e)
     
     # ========================================
     # TAB 3: DATABASE INFO
@@ -959,4 +983,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
