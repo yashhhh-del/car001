@@ -235,33 +235,69 @@ class CarPricePredictor:
         if not self.is_trained:
             self.train()
         
-        # Prepare input
-        input_df = pd.DataFrame([{
-            'Brand': brand,
-            'Model': model,
-            'Year': year,
-            'Mileage': mileage,
-            'Fuel_Type': fuel,
-            'Transmission': transmission,
-            'Condition': condition,
-            'Owner_Type': owner
-        }])
-        
-        # Encode
-        for col in ['Brand', 'Model', 'Fuel_Type', 'Transmission', 'Condition', 'Owner_Type']:
-            if col in self.encoders:
-                try:
-                    input_df[col] = self.encoders[col].transform(input_df[col])
-                except:
+        try:
+            # Prepare input
+            input_df = pd.DataFrame([{
+                'Brand': brand,
+                'Model': model,
+                'Year': year,
+                'Mileage': mileage,
+                'Fuel_Type': fuel,
+                'Transmission': transmission,
+                'Condition': condition,
+                'Owner_Type': owner
+            }])
+            
+            # Encode categorical variables
+            for col in ['Brand', 'Model', 'Fuel_Type', 'Transmission', 'Condition', 'Owner_Type']:
+                if col in self.encoders and hasattr(self.encoders[col], 'classes_'):
+                    try:
+                        input_df[col] = self.encoders[col].transform(input_df[col])
+                    except ValueError:
+                        # Handle unseen labels
+                        input_df[col] = 0
+                else:
                     input_df[col] = 0
+            
+            # Scale numerical features
+            try:
+                input_df[['Year', 'Mileage']] = self.scaler.transform(input_df[['Year', 'Mileage']])
+            except:
+                pass
+            
+            # Predict
+            prediction = self.model.predict(input_df)[0]
+            
+            return max(50000, int(prediction))
+            
+        except Exception as e:
+            st.error(f"Prediction error: {str(e)}")
+            # Fallback: calculate manually
+            return self.manual_price_calculation(brand, model, year, mileage, condition, owner)
+    
+    def manual_price_calculation(self, brand, model, year, mileage, condition, owner):
+        """Fallback manual calculation"""
+        # Get base price
+        market_range = get_market_price(brand, model)
+        base_price = sum(market_range) / 2
         
-        # Scale
-        input_df[['Year', 'Mileage']] = self.scaler.transform(input_df[['Year', 'Mileage']])
+        # Age depreciation
+        current_year = datetime.now().year
+        age = current_year - year
+        price = base_price * (0.88 ** age)
         
-        # Predict
-        prediction = self.model.predict(input_df)[0]
+        # Mileage adjustment
+        price *= max(0.4, 1 - (mileage / 300000))
         
-        return max(50000, int(prediction))
+        # Condition adjustment
+        condition_factors = {"Excellent": 1.1, "Very Good": 1.05, "Good": 1.0, "Fair": 0.9, "Poor": 0.75}
+        price *= condition_factors.get(condition, 1.0)
+        
+        # Owner adjustment
+        owner_factors = {"First": 1.08, "Second": 1.0, "Third": 0.93, "Fourth & Above": 0.85}
+        price *= owner_factors.get(owner, 1.0)
+        
+        return max(50000, int(price))
 
 # ========================================
 # UI FUNCTIONS
@@ -409,26 +445,31 @@ def main():
         brand, model, year, mileage, fuel, transmission, condition, owner = show_input_form()
         
         if st.button("🎯 Predict Price", type="primary", use_container_width=True):
-            with st.spinner("Calculating..."):
-                # Get prediction
-                predicted = st.session_state.predictor.predict(
-                    brand, model, year, mileage, fuel, transmission, condition, owner
-                )
-                
-                # Get market range
-                market_range = get_market_price(brand, model)
-                
-                # Calculate confidence
-                age = datetime.now().year - year
-                confidence = min(95, max(75, 90 - age * 2 - (mileage // 50000) * 3))
-                
-                # Show results
-                show_price_analysis(predicted, market_range, confidence)
-                
-                # Add to history
-                add_to_history(brand, model, year, predicted)
-                
-                st.balloons()
+            try:
+                with st.spinner("Calculating..."):
+                    # Get prediction
+                    predicted = st.session_state.predictor.predict(
+                        brand, model, year, mileage, fuel, transmission, condition, owner
+                    )
+                    
+                    # Get market range
+                    market_range = get_market_price(brand, model)
+                    
+                    # Calculate confidence
+                    age = datetime.now().year - year
+                    confidence = min(95, max(75, 90 - age * 2 - (mileage // 50000) * 3))
+                    
+                    # Show results
+                    show_price_analysis(predicted, market_range, confidence)
+                    
+                    # Add to history
+                    add_to_history(brand, model, year, predicted)
+                    
+                    st.balloons()
+                    
+            except Exception as e:
+                st.error(f"Error occurred: {str(e)}")
+                st.info("Please try training the model first from the 'Train Model' page.")
     
     elif page == "Search History":
         show_history()
