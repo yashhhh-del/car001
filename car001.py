@@ -552,7 +552,8 @@ class EnhancedCarPricePredictor:
         
     def create_synthetic_training_data(self):
         """Create comprehensive training data for all cars"""
-        np.random.seed(42)
+        import random
+        random.seed(42)
         records = []
         
         current_year = datetime.now().year
@@ -570,30 +571,27 @@ class EnhancedCarPricePredictor:
                 
                 # Generate 15 records per model
                 for _ in range(15):
-                    # Year generation - ensure valid range
+                    # Year generation using Python's random
                     min_year = max(2000, current_year - 20)
-                    max_year = current_year
-                    year = np.random.randint(min_year, max_year + 1)
+                    year = random.randint(min_year, current_year)
                     age = current_year - year
                     
-                    # Mileage generation with safety checks
+                    # Mileage generation
                     if age <= 0:
-                        mileage = np.random.randint(100, 2001)
+                        mileage = random.randint(100, 2000)
                     elif age == 1:
-                        mileage = np.random.randint(2000, 20001)
+                        mileage = random.randint(2000, 20000)
                     else:
                         min_mileage = 5000
-                        # Ensure max_mileage is always greater than min_mileage
-                        calculated_max = min(300000, 15000 * age)
-                        max_mileage = max(min_mileage + 10000, calculated_max)
-                        mileage = np.random.randint(min_mileage, max_mileage + 1)
+                        max_mileage = min(300000, max(10000, 15000 * age))
+                        mileage = random.randint(min_mileage, max_mileage)
                     
                     # Condition and owner type
-                    condition = np.random.choice(CAR_CONDITIONS, p=[0.1, 0.25, 0.4, 0.2, 0.05])
-                    owner_type = np.random.choice(OWNER_TYPES, p=[0.5, 0.3, 0.15, 0.05])
+                    condition = random.choices(CAR_CONDITIONS, weights=[10, 25, 40, 20, 5])[0]
+                    owner_type = random.choices(OWNER_TYPES, weights=[50, 30, 15, 5])[0]
                     
-                    fuel_type = np.random.choice(FUEL_TYPES)
-                    transmission = np.random.choice(TRANSMISSIONS)
+                    fuel_type = random.choice(FUEL_TYPES)
+                    transmission = random.choice(TRANSMISSIONS)
                     
                     # Calculate realistic price
                     price = self.calculate_realistic_price(
@@ -622,6 +620,7 @@ class EnhancedCarPricePredictor:
     def calculate_realistic_price(self, base_price, age, mileage, condition, owner_type,
                                  fuel_type, transmission, brand, car_type):
         """Calculate realistic price with multiple factors"""
+        import random
         
         # Age depreciation
         age_factor = 0.87 ** age
@@ -670,8 +669,8 @@ class EnhancedCarPricePredictor:
                 condition_mult[condition] * owner_mult[owner_type] *
                 fuel_mult[fuel_type] * trans_mult[transmission])
         
-        # Add variation
-        variation = np.random.uniform(0.93, 1.07)
+        # Add variation using Python random
+        variation = random.uniform(0.93, 1.07)
         price *= variation
         
         return max(50000, int(price))
