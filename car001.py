@@ -427,18 +427,17 @@ class EnhancedCarPricePredictor:
                 
                 # Generate multiple records with variations
                 for _ in range(20):  # 20 records per model for performance
-                    year = np.random.randint(max(1990, current_year-20), current_year+1)
+                    # Safe year generation
+                    min_year = max(1990, current_year-20)
+                    year = int(np.random.uniform(min_year, current_year + 0.99))
                     age = current_year - year
                     
-                    # FIX: Completely safe mileage calculation
+                    # Safe mileage generation using uniform distribution
                     if age <= 0:
-                        # Brand new car
                         mileage = int(np.random.uniform(10, 2000))
                     elif age == 1:
-                        # 1 year old car
                         mileage = int(np.random.uniform(2000, 20000))
                     else:
-                        # Older cars - use uniform instead of randint for safety
                         min_mileage = 5000
                         max_mileage = min(300000, 15000 * age)
                         mileage = int(np.random.uniform(min_mileage, max_mileage))
@@ -815,7 +814,7 @@ def show_manual_input_form():
                                  "Keyless Entry", "Push Start", "ABS", "Airbags", "ESP"])
     
     # Generate unique Car_ID
-    car_id = f"{brand[:3].upper()}_{model[:3].upper()}_{year}_{np.random.randint(1000,9999)}"
+    car_id = f"{brand[:3].upper()}_{model[:3].upper()}_{year}_{int(np.random.uniform(1000, 9999))}"
     
     # Return all input data
     input_data = {
