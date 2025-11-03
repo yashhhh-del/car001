@@ -12,14 +12,6 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
 from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
 from datetime import datetime
-import requests
-from bs4 import BeautifulSoup
-import re
-import joblib
-import os
-import time
-import io
-from fake_useragent import UserAgent
 
 # ========================================
 # COMPREHENSIVE CAR DATABASE FOR MANUAL INPUT
@@ -155,14 +147,14 @@ CAR_DATABASE = {
         'car_types': ['Sedan', 'Sedan', 'Sedan', 'Sedan', 'SUV', 'SUV', 'SUV', 'SUV', 'SUV', 'Sedan', 'Coupe', 'Sedan', 'SUV', 'Coupe', 'Convertible'],
         'engine_cc': [1332, 1497, 1991, 2999, 1332, 1991, 1991, 2999, 0, 0, 3982, 5980, 2925, 1991, 1991],
         'power_hp': [163, 204, 258, 435, 163, 258, 362, 483, 228, 329, 523, 621, 416, 258, 258],
-        'seats': [5, 5, 5, 5, 5, 5, 7, 2, 5, 5, 5, 5, 5, 5, 4]
+        'seats': [5, 5, 5, 5, 5, 5, 7, 7, 7, 5, 2, 5, 5, 5, 2]
     },
     'Audi': {
         'models': ['A3', 'A4', 'A6', 'A8', 'Q3', 'Q5', 'Q7', 'Q8', 'e-tron', 'RS5', 'R8', 'TT', 'RS7', 'Q8 Sportback', 'A5'],
         'car_types': ['Sedan', 'Sedan', 'Sedan', 'Sedan', 'SUV', 'SUV', 'SUV', 'SUV', 'SUV', 'Coupe', 'Sports', 'Coupe', 'Sedan', 'SUV', 'Coupe'],
         'engine_cc': [1395, 1984, 1984, 2995, 1395, 1984, 2995, 2995, 0, 2894, 5204, 1984, 3993, 2995, 1984],
         'power_hp': [150, 190, 245, 340, 150, 245, 340, 340, 355, 450, 602, 228, 600, 340, 190],
-        'seats': [5, 5, 5, 5, 5, 5, 7, 2, 5, 5, 5, 5, 5, 5, 4]
+        'seats': [5, 5, 5, 5, 5, 5, 7, 5, 7, 4, 2, 2, 5, 5, 4]
     },
     'Lexus': {
         'models': ['ES', 'LS', 'NX', 'RX', 'UX', 'LC', 'LX', 'RC', 'GX', 'IS'],
@@ -438,7 +430,12 @@ class EnhancedCarPricePredictor:
                     year = np.random.randint(max(1990, current_year-20), current_year+1)
                     age = current_year - year
                     
-                    mileage = np.random.randint(1000, min(300000, 15000 * age))
+                    # FIX: Ensure upper bound is always greater than lower bound
+                    max_mileage = max(5000, min(300000, 15000 * max(1, age)))
+                    if max_mileage > 1000:
+                        mileage = np.random.randint(1000, max_mileage)
+                    else:
+                        mileage = np.random.randint(100, 5000)
                     
                     # Condition probabilities
                     condition_weights = [0.1, 0.2, 0.4, 0.2, 0.1]  # More 'Good' condition cars
@@ -554,7 +551,7 @@ class EnhancedCarPricePredictor:
         features = ['Brand', 'Model', 'Car_Type', 'Year', 'Fuel_Type', 'Transmission',
                    'Mileage', 'Engine_cc', 'Power_HP', 'Seats', 'Condition', 'Owner_Type']
         
-        X = df[features]
+        X = df[features].copy()
         y = df['Price']
         
         # Encode categorical variables
@@ -1031,6 +1028,7 @@ def show_csv_upload_feature():
     
     st.info("""
     **Upload a CSV file with car details to get bulk price predictions.**
+    
     Required columns: Brand, Model, Year, Fuel_Type, Transmission, Mileage, Condition, Owner_Type
     """)
     
@@ -1049,8 +1047,11 @@ def show_csv_upload_feature():
             if st.button("🚀 Predict Prices for All Cars", type="primary"):
                 predictions = []
                 
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
                 with st.spinner("Predicting prices for all cars..."):
-                    for _, row in df.iterrows():
+                    for idx, row in df.iterrows():
                         try:
                             # Prepare input data
                             input_data = {
@@ -1087,9 +1088,17 @@ def show_csv_upload_feature():
                                 'Price_Difference': predicted_price - market_prices[1]
                             })
                             
+                            # Update progress
+                            progress = (idx + 1) / len(df)
+                            progress_bar.progress(progress)
+                            status_text.text(f"Processing: {idx + 1}/{len(df)} cars")
+                            
                         except Exception as e:
-                            st.warning(f"Error processing row {_}: {str(e)}")
+                            st.warning(f"Error processing row {idx}: {str(e)}")
                             continue
+                
+                progress_bar.empty()
+                status_text.empty()
                 
                 if predictions:
                     # Create results dataframe
@@ -1122,6 +1131,12 @@ def show_csv_upload_feature():
                     with col3:
                         avg_difference = results_df['Price_Difference'].mean()
                         st.metric("Avg Price Difference", f"₹{avg_difference:,.0f}")
+                    
+                    # Visualization
+                    st.subheader("📊 Price Distribution")
+                    fig = px.histogram(results_df, x='Predicted_Price', nbins=30,
+                                      title='Distribution of Predicted Prices')
+                    st.plotly_chart(fig, use_container_width=True)
         
         except Exception as e:
             st.error(f"Error reading CSV file: {str(e)}")
@@ -1147,7 +1162,7 @@ def show_car_comparison():
             model1 = st.selectbox("Model 1", CAR_DATABASE[brand1]['models'], key="model1")
             year1 = st.number_input("Year 1", min_value=1990, max_value=datetime.now().year, value=2020, key="year1")
             condition1 = st.selectbox("Condition 1", CAR_CONDITIONS, key="condition1")
-            add_car1 = st.button("Add Car 1", key="add1")
+            add_car1 = st.checkbox("Include Car 1", key="add1", value=True)
             
             if add_car1:
                 cars_to_compare.append({
@@ -1164,7 +1179,7 @@ def show_car_comparison():
             model2 = st.selectbox("Model 2", CAR_DATABASE[brand2]['models'], key="model2")
             year2 = st.number_input("Year 2", min_value=1990, max_value=datetime.now().year, value=2019, key="year2")
             condition2 = st.selectbox("Condition 2", CAR_CONDITIONS, key="condition2")
-            add_car2 = st.button("Add Car 2", key="add2")
+            add_car2 = st.checkbox("Include Car 2", key="add2", value=True)
             
             if add_car2:
                 cars_to_compare.append({
@@ -1181,7 +1196,7 @@ def show_car_comparison():
             model3 = st.selectbox("Model 3", CAR_DATABASE[brand3]['models'], key="model3")
             year3 = st.number_input("Year 3", min_value=1990, max_value=datetime.now().year, value=2018, key="year3")
             condition3 = st.selectbox("Condition 3", CAR_CONDITIONS, key="condition3")
-            add_car3 = st.button("Add Car 3", key="add3")
+            add_car3 = st.checkbox("Include Car 3", key="add3", value=False)
             
             if add_car3:
                 cars_to_compare.append({
@@ -1253,7 +1268,7 @@ def show_car_comparison():
             
             # Price comparison chart
             fig = px.bar(comparison_df, 
-                        x='Brand', 
+                        x='Model', 
                         y=['Predicted Price', 'Market Average'],
                         title='Price Comparison',
                         barmode='group')
@@ -1261,7 +1276,7 @@ def show_car_comparison():
             
             # Value score comparison
             fig2 = px.bar(comparison_df,
-                         x='Brand',
+                         x='Model',
                          y='Value Score',
                          title='Value Score (Higher is Better)',
                          color='Value Score')
@@ -1373,12 +1388,6 @@ def main():
     # Initialize session state
     if 'predictor' not in st.session_state:
         st.session_state.predictor = EnhancedCarPricePredictor()
-    
-    st.set_page_config(
-        page_title="Advanced Car Price Predictor", 
-        layout="wide", 
-        initial_sidebar_state="expanded"
-    )
     
     st.title("🚗 Advanced Car Price Prediction System")
     st.markdown("### **AI-Powered Accurate Price Estimation with Market Intelligence**")
