@@ -570,20 +570,23 @@ class EnhancedCarPricePredictor:
                 
                 # Generate 15 records per model
                 for _ in range(15):
-                    # Year generation
+                    # Year generation - ensure valid range
                     min_year = max(2000, current_year - 20)
-                    year = int(np.random.uniform(min_year, current_year + 0.99))
+                    max_year = current_year
+                    year = np.random.randint(min_year, max_year + 1)
                     age = current_year - year
                     
                     # Mileage generation with safety checks
                     if age <= 0:
-                        mileage = int(np.random.uniform(100, 2000))
+                        mileage = np.random.randint(100, 2001)
                     elif age == 1:
-                        mileage = int(np.random.uniform(2000, 20000))
+                        mileage = np.random.randint(2000, 20001)
                     else:
                         min_mileage = 5000
-                        max_mileage = max(min_mileage + 5000, min(300000, 15000 * age))
-                        mileage = int(np.random.uniform(min_mileage, max_mileage))
+                        # Ensure max_mileage is always greater than min_mileage
+                        calculated_max = min(300000, 15000 * age)
+                        max_mileage = max(min_mileage + 10000, calculated_max)
+                        mileage = np.random.randint(min_mileage, max_mileage + 1)
                     
                     # Condition and owner type
                     condition = np.random.choice(CAR_CONDITIONS, p=[0.1, 0.25, 0.4, 0.2, 0.05])
