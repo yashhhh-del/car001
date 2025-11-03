@@ -1,820 +1,716 @@
-# ======================================================
-# SMART CAR PRICING SYSTEM - COMPLETE CAR DATABASE
-# ======================================================
-
 import streamlit as st
 import pandas as pd
 import numpy as np
-import plotly.graph_objects as go
-import plotly.express as px
-from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from datetime import datetime
-import io
-import base64
 
-# ========================================
-# COMPREHENSIVE CAR DATABASE FOR MANUAL INPUT
-# ========================================
+# Page Configuration
+st.set_page_config(page_title="Smart Car Pricing PRO", layout="wide", initial_sidebar_state="expanded")
 
+# Custom CSS
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #4A90E2;
+        text-align: center;
+        padding: 1rem 0;
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1.5rem;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+st.markdown('<h1 class="main-header">🚗 Smart Car Pricing System PRO</h1>', unsafe_allow_html=True)
+st.markdown("### AI-Powered Price Predictions with CSV Learning, EMI Calculator & More!")
+
+sns.set(style="whitegrid")
+
+# Comprehensive Car Database
 CAR_DATABASE = {
     'Maruti Suzuki': {
         'models': ['Alto', 'Alto K10', 'S-Presso', 'Celerio', 'Wagon R', 'Ignis', 'Swift', 'Baleno', 'Dzire', 'Ciaz', 
-                  'Ertiga', 'XL6', 'Vitara Brezza', 'Jimny', 'Fronx', 'Grand Vitara', 'Eeco', 'Omni', 'Celerio X'],
-        'car_types': ['Hatchback', 'Hatchback', 'Hatchback', 'Hatchback', 'Hatchback', 'Hatchback', 'Hatchback', 'Hatchback', 'Sedan', 'Sedan',
-                     'MUV', 'MUV', 'SUV', 'SUV', 'SUV', 'SUV', 'Van', 'Van', 'Hatchback'],
+                  'Ertiga', 'XL6', 'Vitara Brezza', 'Jimny', 'Fronx', 'Grand Vitara'],
         'engine_cc': [796, 998, 998, 998, 998, 1197, 1197, 1197, 1197, 1462,
-                     1462, 1462, 1462, 1462, 1197, 1462, 1196, 796, 998],
+                     1462, 1462, 1462, 1462, 1197, 1462],
         'power_hp': [48, 67, 67, 67, 67, 83, 90, 90, 90, 103,
-                    103, 103, 103, 103, 90, 103, 73, 35, 67],
-        'seats': [5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                 7, 6, 5, 5, 5, 5, 5, 8, 5]
+                    103, 103, 103, 103, 90, 103]
     },
     'Hyundai': {
-        'models': ['i10', 'i20', 'Aura', 'Grand i10 Nios', 'Verna', 'Creta', 'Venue', 'Alcazar', 'Tucson', 'Kona Electric',
-                  'Santro', 'Xcent', 'Elantra', 'Ioniq 5'],
-        'car_types': ['Hatchback', 'Hatchback', 'Sedan', 'Hatchback', 'Sedan', 'SUV', 'SUV', 'SUV', 'SUV', 'SUV',
-                     'Hatchback', 'Sedan', 'Sedan', 'SUV'],
-        'engine_cc': [1086, 1197, 1197, 1197, 1493, 1493, 1197, 2199, 2199, 0,
-                     1086, 1197, 1999, 0],
-        'power_hp': [69, 83, 83, 83, 115, 115, 83, 148, 148, 136,
-                    69, 83, 152, 217],
-        'seats': [5, 5, 5, 5, 5, 5, 5, 6, 5, 5,
-                 5, 5, 5, 5]
+        'models': ['i10', 'i20', 'Aura', 'Grand i10 Nios', 'Verna', 'Creta', 'Venue', 'Alcazar', 'Tucson', 'Kona Electric'],
+        'engine_cc': [1086, 1197, 1197, 1197, 1493, 1493, 1197, 2199, 2199, 0],
+        'power_hp': [69, 83, 83, 83, 115, 115, 83, 148, 148, 136]
     },
     'Tata': {
-        'models': ['Tiago', 'Tigor', 'Altroz', 'Nexon', 'Punch', 'Harrier', 'Safari', 'Nexon EV', 'Tigor EV', 'Tiago EV',
-                  'Indica', 'Indigo', 'Sumo', 'Hexa'],
-        'car_types': ['Hatchback', 'Sedan', 'Hatchback', 'SUV', 'SUV', 'SUV', 'SUV', 'SUV', 'Sedan', 'Hatchback',
-                     'Hatchback', 'Sedan', 'SUV', 'SUV'],
-        'engine_cc': [1199, 1199, 1199, 1199, 1199, 1956, 1956, 0, 0, 0,
-                     1405, 1405, 2179, 2179],
-        'power_hp': [85, 85, 85, 120, 120, 170, 170, 129, 75, 75,
-                    70, 70, 120, 156],
-        'seats': [5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
-                 5, 5, 8, 7]
+        'models': ['Tiago', 'Tigor', 'Altroz', 'Nexon', 'Punch', 'Harrier', 'Safari', 'Nexon EV', 'Tigor EV', 'Tiago EV'],
+        'engine_cc': [1199, 1199, 1199, 1199, 1199, 1956, 1956, 0, 0, 0],
+        'power_hp': [85, 85, 85, 120, 120, 170, 170, 129, 75, 75]
     },
     'Mahindra': {
-        'models': ['Bolero', 'Scorpio', 'XUV300', 'XUV400', 'XUV700', 'Thar', 'Marazzo', 'KUV100', 'TUV300', 'Alturas G4',
-                  'Bolero Neo', 'Scorpio N', 'Verito', 'Xylo'],
-        'car_types': ['SUV', 'SUV', 'SUV', 'SUV', 'SUV', 'SUV', 'MUV', 'Hatchback', 'SUV', 'SUV',
-                     'SUV', 'SUV', 'Sedan', 'MUV'],
-        'engine_cc': [1493, 2179, 1197, 0, 1997, 1997, 1497, 1198, 1493, 2157,
-                     1493, 1997, 1461, 2179],
-        'power_hp': [75, 140, 110, 150, 200, 150, 123, 83, 100, 178,
-                    100, 200, 65, 120],
-        'seats': [7, 7, 5, 5, 7, 4, 8, 5, 7, 7,
-                 7, 7, 5, 8]
+        'models': ['Bolero', 'Scorpio', 'XUV300', 'XUV400', 'XUV700', 'Thar', 'Marazzo', 'Bolero Neo', 'Scorpio N'],
+        'engine_cc': [1493, 2179, 1197, 0, 1997, 1997, 1497, 1493, 1997],
+        'power_hp': [75, 140, 110, 150, 200, 150, 123, 100, 200]
     },
     'Toyota': {
-        'models': ['Innova Crysta', 'Fortuner', 'Glanza', 'Urban Cruiser Hyryder', 'Camry', 'Vellfire', 'Hilux', 'Etios', 
-                  'Etios Liva', 'Yaris', 'Corolla Altis', 'Innova Hycross'],
-        'car_types': ['MUV', 'SUV', 'Hatchback', 'SUV', 'Sedan', 'MUV', 'Pickup', 'Sedan',
-                     'Hatchback', 'Sedan', 'Sedan', 'MUV'],
-        'engine_cc': [2393, 2694, 1197, 1462, 2487, 2494, 2755, 1496,
-                     1496, 1496, 1798, 1987],
-        'power_hp': [150, 204, 90, 103, 177, 197, 204, 90,
-                    90, 107, 140, 186],
-        'seats': [7, 7, 5, 5, 5, 7, 5, 5,
-                 5, 5, 5, 7]
+        'models': ['Innova Crysta', 'Fortuner', 'Glanza', 'Urban Cruiser Hyryder', 'Camry', 'Vellfire', 'Hilux', 'Innova Hycross'],
+        'engine_cc': [2393, 2694, 1197, 1462, 2487, 2494, 2755, 1987],
+        'power_hp': [150, 204, 90, 103, 177, 197, 204, 186]
     },
     'Honda': {
-        'models': ['Amaze', 'City', 'Jazz', 'WR-V', 'Elevate', 'Civic', 'CR-V', 'Brio'],
-        'car_types': ['Sedan', 'Sedan', 'Hatchback', 'SUV', 'SUV', 'Sedan', 'SUV', 'Hatchback'],
-        'engine_cc': [1199, 1498, 1199, 1199, 1498, 1799, 1997, 1198],
-        'power_hp': [90, 121, 90, 90, 121, 141, 158, 88],
-        'seats': [5, 5, 5, 5, 5, 5, 5, 5]
+        'models': ['Amaze', 'City', 'Jazz', 'WR-V', 'Elevate', 'Civic', 'CR-V'],
+        'engine_cc': [1199, 1498, 1199, 1199, 1498, 1799, 1997],
+        'power_hp': [90, 121, 90, 90, 121, 141, 158]
     },
     'Kia': {
         'models': ['Seltos', 'Sonet', 'Carens', 'Carnival', 'EV6'],
-        'car_types': ['SUV', 'SUV', 'MUV', 'MUV', 'SUV'],
         'engine_cc': [1353, 998, 1482, 2199, 0],
-        'power_hp': [140, 120, 115, 200, 229],
-        'seats': [5, 5, 6, 7, 5]
+        'power_hp': [140, 120, 115, 200, 229]
     },
     'Volkswagen': {
         'models': ['Polo', 'Vento', 'Taigun', 'Virtus', 'Tiguan', 'T-Roc'],
-        'car_types': ['Hatchback', 'Sedan', 'SUV', 'Sedan', 'SUV', 'SUV'],
         'engine_cc': [999, 999, 999, 999, 1984, 1498],
-        'power_hp': [110, 110, 115, 115, 190, 150],
-        'seats': [5, 5, 5, 5, 5, 5]
+        'power_hp': [110, 110, 115, 115, 190, 150]
     },
     'Skoda': {
         'models': ['Rapid', 'Kushaq', 'Slavia', 'Kodiaq', 'Superb', 'Octavia'],
-        'car_types': ['Sedan', 'SUV', 'Sedan', 'SUV', 'Sedan', 'Sedan'],
         'engine_cc': [999, 999, 999, 1984, 1984, 1984],
-        'power_hp': [110, 115, 115, 190, 190, 190],
-        'seats': [5, 5, 5, 7, 5, 5]
+        'power_hp': [110, 115, 115, 190, 190, 190]
     },
     'Renault': {
-        'models': ['Kwid', 'Triber', 'Kiger', 'Duster', 'Captur'],
-        'car_types': ['Hatchback', 'MUV', 'SUV', 'SUV', 'SUV'],
-        'engine_cc': [999, 999, 999, 1498, 1498],
-        'power_hp': [68, 72, 100, 106, 106],
-        'seats': [5, 7, 5, 5, 5]
+        'models': ['Kwid', 'Triber', 'Kiger', 'Duster'],
+        'engine_cc': [999, 999, 999, 1498],
+        'power_hp': [68, 72, 100, 106]
     },
     'Nissan': {
-        'models': ['Magnite', 'Kicks', 'Sunny', 'Micra', 'Terrano'],
-        'car_types': ['SUV', 'SUV', 'Sedan', 'Hatchback', 'SUV'],
-        'engine_cc': [999, 1498, 1498, 1198, 1461],
-        'power_hp': [100, 106, 99, 77, 110],
-        'seats': [5, 5, 5, 5, 5]
+        'models': ['Magnite', 'Kicks', 'Sunny'],
+        'engine_cc': [999, 1498, 1498],
+        'power_hp': [100, 106, 99]
     },
     'MG': {
         'models': ['Hector', 'Astor', 'Gloster', 'ZS EV', 'Comet EV'],
-        'car_types': ['SUV', 'SUV', 'SUV', 'SUV', 'Hatchback'],
         'engine_cc': [1451, 1349, 1996, 0, 0],
-        'power_hp': [143, 134, 218, 177, 42],
-        'seats': [5, 5, 7, 5, 4]
+        'power_hp': [143, 134, 218, 177, 42]
     },
     'Ford': {
         'models': ['EcoSport', 'Endeavour', 'Figo', 'Aspire', 'Freestyle'],
-        'car_types': ['SUV', 'SUV', 'Hatchback', 'Sedan', 'Crossover'],
         'engine_cc': [1498, 1996, 1194, 1194, 1194],
-        'power_hp': [123, 170, 96, 96, 96],
-        'seats': [5, 7, 5, 5, 5]
+        'power_hp': [123, 170, 96, 96, 96]
     }
 }
 
-FUEL_TYPES = ["Petrol", "Diesel", "CNG", "Electric", "Hybrid"]
-TRANSMISSIONS = ["Manual", "Automatic", "CVT", "DCT", "AMT"]
-CAR_CONDITIONS = ["Excellent", "Very Good", "Good", "Fair", "Poor"]
-OWNER_TYPES = ["First", "Second", "Third", "Fourth & Above"]
-INSURANCE_STATUS = ["Comprehensive", "Third Party", "Expired", "No Insurance"]
-COLORS = ["White", "Black", "Silver", "Grey", "Red", "Blue", "Brown", "Green", "Yellow", "Orange", "Purple", "Other"]
-CITIES = ["Delhi", "Mumbai", "Bangalore", "Chennai", "Pune", "Hyderabad", "Kolkata", "Ahmedabad", "Surat", "Jaipur", "Lucknow", "Chandigarh"]
+# Initialize session state
+if 'prediction_history' not in st.session_state:
+    st.session_state.prediction_history = []
 
-# ========================================
-# ENHANCED PRICE PREDICTION ENGINE WITH CSV LEARNING
-# ========================================
+# Sidebar Navigation
+with st.sidebar:
+    st.title("📊 Navigation")
+    page = st.radio("Go to", [
+        "🏠 Home", 
+        "💰 Price Prediction", 
+        "📁 CSV Upload & Training",
+        "📊 Compare Cars", 
+        "🧮 EMI Calculator", 
+        "📈 Market Insights", 
+        "📋 Prediction History",
+        "📥 Download Report"
+    ])
+    
+    st.markdown("---")
+    st.info("💡 Upload your dataset to unlock advanced ML features!")
 
-class EnhancedCarPricePredictor:
-    def __init__(self):
-        self.model = None
-        self.scaler = StandardScaler()
-        self.encoders = {}
-        self.feature_importance = {}
-        self.is_trained = False
-        self.training_data = None  # Properly initialize training_data
-        self.training_records_count = 0
-        
-    def get_live_prices(self, brand, model):
-        """Get live prices for car models with proper error handling"""
-        try:
-            # Simple price database with default values
-            price_database = {
-                'Maruti Suzuki': {
-                    'Alto': [150000, 250000, 350000],
-                    'Swift': [300000, 450000, 600000],
-                    'Baleno': [350000, 500000, 700000],
-                    'Dzire': [320000, 480000, 650000],
-                    'Vitara Brezza': [500000, 700000, 900000],
-                    'Ertiga': [450000, 650000, 850000],
-                    'Wagon R': [200000, 300000, 400000],
-                    'Celerio': [250000, 350000, 450000]
-                },
-                'Hyundai': {
-                    'i10': [250000, 350000, 450000],
-                    'i20': [350000, 500000, 650000],
-                    'Creta': [600000, 850000, 1100000],
-                    'Verna': [450000, 650000, 850000],
-                    'Venue': [450000, 600000, 800000]
-                },
-                'Tata': {
-                    'Tiago': [250000, 350000, 450000],
-                    'Nexon': [450000, 650000, 850000],
-                    'Altroz': [350000, 500000, 650000],
-                    'Harrier': [800000, 1100000, 1400000],
-                    'Safari': [900000, 1200000, 1500000]
-                },
-                'Mahindra': {
-                    'Scorpio': [500000, 700000, 900000],
-                    'XUV300': [450000, 600000, 800000],
-                    'XUV700': [900000, 1200000, 1500000],
-                    'Thar': [600000, 850000, 1100000]
-                },
-                'Toyota': {
-                    'Innova Crysta': [1000000, 1400000, 1800000],
-                    'Fortuner': [1500000, 2000000, 2500000],
-                    'Glanza': [350000, 500000, 650000]
-                },
-                'Honda': {
-                    'City': [450000, 650000, 850000],
-                    'Amaze': [350000, 500000, 650000]
-                }
-            }
-            
-            # Check if brand exists in database
-            if brand not in price_database:
-                default_prices = [300000, 500000, 800000]
-                return default_prices, ["Market Estimate - Unknown Brand"]
-            
-            # Check if model exists for the brand
-            if model not in price_database[brand]:
-                default_prices = [300000, 500000, 800000]
-                return default_prices, ["Market Estimate - Unknown Model"]
-            
-            # Return the actual prices
-            prices = price_database[brand][model]
-            sources = ["Market Database"]
-            return prices, sources
-            
-        except Exception as e:
-            default_prices = [300000, 500000, 800000]
-            return default_prices, ["General Market Average"]
+# File Upload
+uploaded_file = st.file_uploader("📂 Upload CSV/XLSX File", type=["csv","xlsx"])
 
-    def load_csv_data(self, uploaded_file):
-        """Load and process CSV data for training"""
-        try:
+df = None
+df_clean = None
+best_model = None
+encoders = {}
+scaler = None
+feature_columns = []
+result_df = None
+
+if uploaded_file is not None:
+    try:
+        if uploaded_file.name.endswith('.csv'):
             df = pd.read_csv(uploaded_file)
-            st.success(f"✅ Successfully loaded {len(df)} records from CSV")
-            
-            # Display dataset info
-            st.subheader("📊 Dataset Overview")
-            col1, col2, col3 = st.columns(3)
-            with col1:
-                st.metric("Total Records", len(df))
-            with col2:
-                st.metric("Columns", len(df.columns))
-            with col3:
-                st.metric("Missing Values", df.isnull().sum().sum())
-            
-            # Show sample data
-            with st.expander("View Sample Data"):
-                st.dataframe(df.head(10))
-            
-            return df
-        except Exception as e:
-            st.error(f"Error loading CSV: {str(e)}")
-            return None
+        else:
+            df = pd.read_excel(uploaded_file, engine='openpyxl')
+        st.success("✅ File uploaded successfully!")
+    except Exception as e:
+        st.error(f"❌ Error reading file: {e}")
+        st.stop()
 
-    def train_from_csv(self, df):
-        """Train model from CSV data"""
-        try:
-            st.info("🔄 Training model from CSV data...")
-            
-            # Identify required columns
-            required_columns = ['Brand', 'Model', 'Year', 'Fuel_Type', 'Transmission', 
-                              'Mileage', 'Engine_cc', 'Power_HP', 'Condition', 'Price']
-            
-            # Check if required columns exist
-            missing_columns = [col for col in required_columns if col not in df.columns]
-            if missing_columns:
-                st.error(f"Missing required columns: {missing_columns}")
-                return False
-            
-            # Clean data
-            df_clean = df.dropna()
-            if len(df_clean) < 10:
-                st.error("Not enough data after cleaning. Need at least 10 records.")
-                return False
-            
-            # Prepare features
-            features = ['Brand', 'Model', 'Year', 'Fuel_Type', 'Transmission',
-                       'Mileage', 'Engine_cc', 'Power_HP', 'Condition']
-            
-            X = df_clean[features]
-            y = df_clean['Price']
-            
-            # Encode categorical variables
-            categorical_features = ['Brand', 'Model', 'Fuel_Type', 'Transmission', 'Condition']
-            for feature in categorical_features:
-                self.encoders[feature] = LabelEncoder()
-                X[feature] = self.encoders[feature].fit_transform(X[feature])
-            
-            # Scale numerical features
-            numerical_features = ['Year', 'Mileage', 'Engine_cc', 'Power_HP']
-            X[numerical_features] = self.scaler.fit_transform(X[numerical_features])
-            
-            # Train model
-            self.model = RandomForestRegressor(
-                n_estimators=100,
-                max_depth=15,
-                random_state=42
-            )
-            
-            self.model.fit(X, y)
-            self.is_trained = True
-            self.training_data = df_clean
-            self.training_records_count = len(df_clean)
-            
-            # Store feature importance
-            self.feature_importance = dict(zip(features, self.model.feature_importances_))
-            
-            # Evaluate model
-            y_pred = self.model.predict(X)
-            r2 = r2_score(y, y_pred)
-            mae = mean_absolute_error(y, y_pred)
-            
-            st.success(f"✅ Model trained from CSV! R²: {r2:.3f}, MAE: ₹{mae:,.0f}")
-            
-            # Show feature importance
-            st.subheader("📈 Feature Importance from CSV Data")
-            importance_df = pd.DataFrame({
-                'Feature': list(self.feature_importance.keys()),
-                'Importance': list(self.feature_importance.values())
-            }).sort_values('Importance', ascending=False)
-            
-            fig = px.bar(importance_df, x='Importance', y='Feature', orientation='h',
-                        title='Feature Importance (Trained from CSV)')
-            st.plotly_chart(fig, use_container_width=True)
-            
-            return True
-            
-        except Exception as e:
-            st.error(f"Error training from CSV: {str(e)}")
-            return False
+    if 'Market_Price(INR)' not in df.columns:
+        st.error("❌ Dataset must include 'Market_Price(INR)' column.")
+        st.stop()
 
-    def predict_price(self, input_data):
-        """Predict car price"""
-        if not self.is_trained:
-            # Use fallback if no model trained
-            return self.fallback_prediction(input_data)
-        
-        try:
-            # Prepare input features
-            features = ['Brand', 'Model', 'Year', 'Fuel_Type', 'Transmission',
-                       'Mileage', 'Engine_cc', 'Power_HP', 'Condition']
-            
-            input_df = pd.DataFrame([input_data])
-            
-            # Encode categorical variables
-            for feature in ['Brand', 'Model', 'Fuel_Type', 'Transmission', 'Condition']:
-                if feature in self.encoders:
-                    try:
-                        input_df[feature] = self.encoders[feature].transform([input_data[feature]])[0]
-                    except:
-                        input_df[feature] = 0
-            
-            # Scale numerical features
-            numerical_features = ['Year', 'Mileage', 'Engine_cc', 'Power_HP']
-            input_df[numerical_features] = self.scaler.transform(input_df[numerical_features])
-            
-            # Ensure all features are present
-            for feature in features:
-                if feature not in input_df.columns:
-                    input_df[feature] = 0
-            
-            input_df = input_df[features]
-            
-            # Get prediction
-            prediction = self.model.predict(input_df)[0]
-            return max(100000, int(prediction))
-            
-        except Exception as e:
-            st.warning(f"Using fallback prediction: {str(e)}")
-            return self.fallback_prediction(input_data)
+    # Data Preprocessing
+    df_clean = df.dropna()
+    cat_cols = df_clean.select_dtypes(include=['object']).columns
+    df_encoded = df_clean.copy()
     
-    def fallback_prediction(self, input_data):
-        """Fallback price prediction when model fails"""
-        base_prices, _ = self.get_live_prices(input_data['Brand'], input_data['Model'])
-        base_price = base_prices[1]
-        
-        # Simple calculation based on age and condition
-        current_year = datetime.now().year
-        age = current_year - input_data['Year']
-        age_factor = max(0.3, 1 - (age * 0.1))
-        
-        condition_multipliers = {
-            "Excellent": 1.1, "Very Good": 1.0, "Good": 0.9, "Fair": 0.8, "Poor": 0.6
+    for col in cat_cols:
+        le = LabelEncoder()
+        df_encoded[col] = le.fit_transform(df_clean[col].astype(str))
+        encoders[col] = le
+
+    # Model Training
+    X = df_encoded.drop(columns=['Market_Price(INR)'])
+    y = df_encoded['Market_Price(INR)']
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+    feature_columns = X.columns.tolist()
+
+    X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+    models = {
+        'Linear Regression': LinearRegression(),
+        'Random Forest': RandomForestRegressor(n_estimators=100, random_state=42),
+        'Gradient Boosting': GradientBoostingRegressor(n_estimators=100, random_state=42)
+    }
+
+    results = {}
+    trained_models = {}
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        trained_models[name] = model
+        y_pred = model.predict(X_test)
+        results[name] = {
+            'MAE': mean_absolute_error(y_test, y_pred),
+            'RMSE': np.sqrt(mean_squared_error(y_test, y_pred)),
+            'R2 Score': r2_score(y_test, y_pred)
         }
+
+    result_df = pd.DataFrame(results).T
+    best_model_name = result_df['R2 Score'].idxmax()
+    best_model = trained_models[best_model_name]
+
+# ============================================
+# HOME PAGE
+# ============================================
+if page == "🏠 Home":
+    if df_clean is not None:
+        st.subheader("📊 Dataset Overview")
         
-        price = base_price * age_factor * condition_multipliers[input_data['Condition']]
-        return max(100000, int(price))
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Cars", f"{len(df_clean):,}")
+        with col2:
+            st.metric("Unique Brands", f"{df_clean['Brand'].nunique()}")
+        with col3:
+            st.metric("Avg Price", f"₹{df_clean['Market_Price(INR)'].mean():,.0f}")
+        with col4:
+            st.metric("Price Range", f"₹{df_clean['Market_Price(INR)'].min():,.0f} - ₹{df_clean['Market_Price(INR)'].max():,.0f}")
 
-# ========================================
-# UTILITY FUNCTIONS
-# ========================================
+        st.markdown("---")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            st.subheader("🏆 Top 10 Most Popular Brands")
+            brand_counts = df_clean['Brand'].value_counts().head(10)
+            fig, ax = plt.subplots(figsize=(10, 6))
+            sns.barplot(x=brand_counts.values, y=brand_counts.index, palette='viridis', ax=ax)
+            ax.set_xlabel('Number of Cars')
+            ax.set_ylabel('Brand')
+            st.pyplot(fig)
+        
+        with col2:
+            st.subheader("💎 Top 10 Most Expensive Cars")
+            top_expensive = df_clean.nlargest(10, 'Market_Price(INR)')[['Brand', 'Model', 'Market_Price(INR)']]
+            top_expensive['Price'] = top_expensive['Market_Price(INR)'].apply(lambda x: f"₹{x:,.0f}")
+            st.dataframe(top_expensive[['Brand', 'Model', 'Price']], use_container_width=True, hide_index=True)
 
-def show_brand_statistics():
-    """Show statistics about available car brands"""
-    st.sidebar.subheader("📈 Brand Statistics")
+        st.markdown("---")
+        st.subheader("🔍 Quick Search Dataset")
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            search_brand = st.multiselect("Filter by Brand", options=["All"] + sorted(df_clean['Brand'].unique().tolist()))
+        with col2:
+            if 'Fuel_Type' in df_clean.columns:
+                search_fuel = st.multiselect("Filter by Fuel Type", options=["All"] + sorted(df_clean['Fuel_Type'].unique().tolist()))
+            else:
+                search_fuel = ["All"]
+        
+        filtered_data = df_clean.copy()
+        if search_brand and "All" not in search_brand:
+            filtered_data = filtered_data[filtered_data['Brand'].isin(search_brand)]
+        if search_fuel and "All" not in search_fuel and 'Fuel_Type' in df_clean.columns:
+            filtered_data = filtered_data[filtered_data['Fuel_Type'].isin(search_fuel)]
+        
+        st.dataframe(filtered_data, use_container_width=True)
+        
+        csv = filtered_data.to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download Filtered Data", csv, "filtered_cars.csv", "text/csv")
+    else:
+        st.info("📥 Please upload your dataset to see analytics!")
+        
+        st.markdown("### 🎯 Available Features:")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("""
+            **💰 Price Prediction**
+            - AI-powered estimation
+            - Multiple ML models
+            - Manual input form
+            - Auto-fill details
+            """)
+        
+        with col2:
+            st.markdown("""
+            **📊 Compare Cars**
+            - Side-by-side view
+            - Visual charts
+            - Best value finder
+            - Multiple cars
+            """)
+        
+        with col3:
+            st.markdown("""
+            **🧮 EMI Calculator**
+            - Monthly payments
+            - Loan breakdown
+            - Payment schedule
+            - Interest analysis
+            """)
+
+# ============================================
+# PRICE PREDICTION PAGE
+# ============================================
+elif page == "💰 Price Prediction":
+    st.subheader("💰 Predict Car Price")
     
-    total_brands = len(CAR_DATABASE)
-    total_models = sum(len(CAR_DATABASE[brand]['models']) for brand in CAR_DATABASE)
+    if df_clean is not None and best_model is not None:
+        col1, col2 = st.columns([1, 1])
+        
+        with col1:
+            st.markdown("### 🤖 Model Performance")
+            st.dataframe(result_df.style.highlight_max(axis=0, color='lightgreen'), use_container_width=True)
+            st.success(f"🏆 Best Model: **{best_model_name}**")
+        
+        with col2:
+            st.markdown("### 📊 Model Comparison")
+            fig, ax = plt.subplots(figsize=(8, 5))
+            models_list = list(results.keys())
+            r2_scores = [results[m]['R2 Score'] for m in models_list]
+            sns.barplot(x=r2_scores, y=models_list, palette='coolwarm', ax=ax)
+            ax.set_xlabel('R2 Score')
+            ax.set_title('Model Performance')
+            st.pyplot(fig)
+
+        st.markdown("---")
+        
+        brands = sorted(df_clean['Brand'].unique())
+        selected_brand = st.selectbox("🚘 Select Brand", brands)
+
+        filtered_models = sorted(df_clean[df_clean['Brand'] == selected_brand]['Model'].unique())
+        selected_model = st.selectbox("🔧 Select Model", filtered_models)
+
+        filtered_rows = df_clean[(df_clean['Brand'] == selected_brand) & 
+                                (df_clean['Model'] == selected_model)]
+
+        if len(filtered_rows) > 0:
+            filtered_row = filtered_rows.iloc[0]
+            
+            st.markdown("### 🧩 Car Details (Editable)")
+            
+            col1, col2, col3 = st.columns(3)
+            inputs = {}
+            
+            feature_idx = 0
+            for col in feature_columns:
+                if col in filtered_row.index:
+                    with [col1, col2, col3][feature_idx % 3]:
+                        if df_clean[col].dtype == 'object':
+                            options = sorted(df_clean[col].unique())
+                            default = filtered_row[col]
+                            inputs[col] = st.selectbox(f"{col}", options, index=options.index(default), key=f"pred_{col}")
+                        else:
+                            min_val = int(df_clean[col].min())
+                            max_val = int(df_clean[col].max())
+                            default_val = int(filtered_row[col])
+                            inputs[col] = st.slider(f"{col}", min_val, max_val, default_val, key=f"pred_{col}")
+                    feature_idx += 1
+
+            if st.button("🔍 Predict Price", type="primary"):
+                input_df = pd.DataFrame([inputs])
+                for col in encoders:
+                    if col in input_df:
+                        input_df[col] = encoders[col].transform(input_df[col].astype(str))
+                input_scaled = scaler.transform(input_df)
+                predicted_price = best_model.predict(input_scaled)[0]
+
+                st.markdown("---")
+                st.subheader("📊 Price Estimation")
+                
+                col1, col2, col3 = st.columns(3)
+                with col1:
+                    st.metric("Minimum Price", f"₹{predicted_price*0.9:,.0f}", delta="-10%")
+                with col2:
+                    st.metric("Fair Market Price", f"₹{predicted_price:,.0f}", delta="Recommended")
+                with col3:
+                    st.metric("Maximum Price", f"₹{predicted_price*1.1:,.0f}", delta="+10%")
+                
+                st.balloons()
+                
+                st.session_state.prediction_history.append({
+                    'Brand': selected_brand,
+                    'Model': selected_model,
+                    'Predicted_Price': predicted_price,
+                    'Timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+    else:
+        st.warning("⚠️ Please upload a dataset to enable ML predictions!")
+        st.info("You can use manual input mode with the car database below:")
+        
+        st.markdown("### 🔧 Manual Price Estimation")
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            brand = st.selectbox("Brand", list(CAR_DATABASE.keys()))
+            if brand in CAR_DATABASE:
+                model = st.selectbox("Model", CAR_DATABASE[brand]['models'])
+                model_idx = CAR_DATABASE[brand]['models'].index(model)
+                engine = CAR_DATABASE[brand]['engine_cc'][model_idx]
+                power = CAR_DATABASE[brand]['power_hp'][model_idx]
+                
+                st.text_input("Engine CC", value=f"{engine} cc", disabled=True)
+                st.text_input("Power", value=f"{power} HP", disabled=True)
+        
+        with col2:
+            year = st.number_input("Year", min_value=1990, max_value=datetime.now().year, value=datetime.now().year-3)
+            mileage = st.number_input("Mileage (km)", min_value=0, max_value=500000, value=30000)
+            condition = st.selectbox("Condition", ["Excellent", "Good", "Fair", "Poor"])
+        
+        if st.button("Estimate Price", type="primary"):
+            base_price = 500000
+            age_factor = max(0.5, 1 - ((datetime.now().year - year) * 0.08))
+            condition_factor = {"Excellent": 1.1, "Good": 1.0, "Fair": 0.85, "Poor": 0.7}[condition]
+            mileage_factor = max(0.6, 1 - (mileage / 200000))
+            
+            estimated_price = base_price * age_factor * condition_factor * mileage_factor
+            
+            st.success(f"**Estimated Price: ₹{estimated_price:,.0f}**")
+            st.info("💡 Upload a CSV dataset for more accurate ML-based predictions!")
+
+# ============================================
+# CSV UPLOAD & TRAINING PAGE
+# ============================================
+elif page == "📁 CSV Upload & Training":
+    st.subheader("📁 Upload & Train Custom Dataset")
     
-    st.sidebar.info(f"""
-    **Database Overview:**
-    - 🚗 **Brands:** {total_brands}
-    - 🎯 **Models:** {total_models}
-    - 📊 **Coverage:** Comprehensive
+    st.info("""
+    **Upload your own car dataset to train the AI model!**
+    
+    Required columns: Brand, Model, Year, Fuel_Type, Transmission, Mileage, Engine_cc, Power_HP, Condition, Market_Price(INR)
     """)
+    
+    if df_clean is not None:
+        st.success(f"✅ Dataset loaded: {len(df_clean)} records")
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Records", len(df_clean))
+        with col2:
+            st.metric("Features", len(feature_columns))
+        with col3:
+            st.metric("Best R² Score", f"{result_df['R2 Score'].max():.3f}")
+        
+        with st.expander("View Sample Data"):
+            st.dataframe(df_clean.head(20))
+        
+        if result_df is not None:
+            st.subheader("📊 Model Performance Metrics")
+            st.dataframe(result_df, use_container_width=True)
+    else:
+        st.warning("No dataset uploaded yet. Upload a CSV file to start training!")
 
-def show_manual_input_form():
-    """Show comprehensive manual input form for car details"""
-    st.subheader("🔧 Complete Car Details Entry")
+# ============================================
+# COMPARE CARS PAGE
+# ============================================
+elif page == "📊 Compare Cars":
+    st.subheader("📊 Compare Multiple Cars")
+    
+    if df_clean is not None:
+        st.info("Select 2-3 cars to compare side-by-side")
+        
+        num_cars = st.slider("Number of cars to compare", 2, 3, 2)
+        
+        comparison_data = []
+        cols = st.columns(num_cars)
+        
+        for i, col in enumerate(cols):
+            with col:
+                st.markdown(f"### Car {i+1}")
+                brands = sorted(df_clean['Brand'].unique())
+                brand = st.selectbox(f"Brand", brands, key=f"comp_brand_{i}")
+                
+                models = sorted(df_clean[df_clean['Brand'] == brand]['Model'].unique())
+                model = st.selectbox(f"Model", models, key=f"comp_model_{i}")
+                
+                car_data = df_clean[(df_clean['Brand'] == brand) & (df_clean['Model'] == model)].iloc[0]
+                
+                comparison_data.append({
+                    'Brand': brand,
+                    'Model': model,
+                    'Price': car_data['Market_Price(INR)'],
+                    'Year': car_data['Year'],
+                    'Fuel_Type': car_data.get('Fuel_Type', 'N/A'),
+                    'Mileage': car_data.get('Mileage(km)', 'N/A')
+                })
+        
+        if st.button("🔄 Compare Now"):
+            st.markdown("---")
+            st.subheader("📋 Comparison Results")
+            
+            comparison_df = pd.DataFrame(comparison_data).T
+            comparison_df.columns = [f"Car {i+1}" for i in range(num_cars)]
+            st.dataframe(comparison_df, use_container_width=True)
+            
+            st.markdown("### 💰 Price Comparison")
+            fig, ax = plt.subplots(figsize=(10, 5))
+            car_names = [f"{d['Brand']} {d['Model']}" for d in comparison_data]
+            prices = [d['Price'] for d in comparison_data]
+            sns.barplot(x=car_names, y=prices, palette='Set2', ax=ax)
+            ax.set_ylabel('Price (INR)')
+            ax.set_title('Price Comparison')
+            plt.xticks(rotation=45, ha='right')
+            st.pyplot(fig)
+            
+            best_idx = prices.index(min(prices))
+            st.success(f"💰 Best Value: **{comparison_data[best_idx]['Brand']} {comparison_data[best_idx]['Model']}** at ₹{comparison_data[best_idx]['Price']:,.0f}")
+    else:
+        st.warning("Please upload a dataset first!")
+
+# ============================================
+# EMI CALCULATOR PAGE
+# ============================================
+elif page == "🧮 EMI Calculator":
+    st.subheader("🧮 EMI Calculator")
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.markdown("### Enter Loan Details")
+        
+        car_price = st.number_input("Car Price (₹)", min_value=100000, max_value=50000000, value=1000000, step=50000)
+        down_payment = st.slider("Down Payment (%)", 0, 50, 20)
+        interest_rate = st.slider("Annual Interest Rate (%)", 5.0, 20.0, 9.5, step=0.5)
+        tenure_years = st.slider("Loan Tenure (Years)", 1, 7, 5)
+        
+        principal = car_price - (car_price * down_payment / 100)
+        rate_monthly = interest_rate / (12 * 100)
+        tenure_months = tenure_years * 12
+        
+        if rate_monthly > 0:
+            emi = principal * rate_monthly * ((1 + rate_monthly)**tenure_months) / (((1 + rate_monthly)**tenure_months) - 1)
+        else:
+            emi = principal / tenure_months
+        
+        total_amount = emi * tenure_months
+        total_interest = total_amount - principal
+    
+    with col2:
+        st.markdown("### EMI Breakdown")
+        
+        st.metric("Monthly EMI", f"₹{emi:,.0f}")
+        st.metric("Total Amount Payable", f"₹{total_amount:,.0f}")
+        st.metric("Total Interest", f"₹{total_interest:,.0f}")
+        st.metric("Down Payment", f"₹{car_price * down_payment / 100:,.0f}")
+        
+        fig, ax = plt.subplots(figsize=(6, 6))
+        ax.pie([principal, total_interest], labels=['Principal', 'Interest'], 
+               autopct='%1.1f%%', startangle=90, colors=['#4A90E2', '#E24A4A'])
+        ax.set_title('Loan Breakdown')
+        st.pyplot(fig)
+    
+    st.markdown("---")
+    st.subheader("📅 Payment Schedule (First 12 Months)")
+    
+    schedule = []
+    balance = principal
+    
+    for month in range(1, min(13, tenure_months + 1)):
+        interest_payment = balance * rate_monthly
+        principal_payment = emi - interest_payment
+        balance -= principal_payment
+        
+        schedule.append({
+            'Month': month,
+            'EMI': f"₹{emi:,.0f}",
+            'Principal': f"₹{principal_payment:,.0f}",
+            'Interest': f"₹{interest_payment:,.0f}",
+            'Balance': f"₹{balance:,.0f}"
+        })
+    
+    st.dataframe(pd.DataFrame(schedule), use_container_width=True, hide_index=True)
+
+# ============================================
+# MARKET INSIGHTS PAGE
+# ============================================
+elif page == "📈 Market Insights":
+    st.subheader("📈 Market Insights & Analytics")
+    
+    if df_clean is not None:
+        tab1, tab2, tab3 = st.tabs(["📊 Price Distribution", "⛽ Fuel Analysis", "📅 Year Trends"])
+        
+        with tab1:
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                fig, ax = plt.subplots(figsize=(8, 5))
+                sns.histplot(df_clean['Market_Price(INR)'], kde=True, bins=50, ax=ax, color='skyblue')
+                ax.set_title('Price Distribution')
+                ax.set_xlabel('Price (INR)')
+                st.pyplot(fig)
+            
+            with col2:
+                fig, ax = plt.subplots(figsize=(8, 5))
+                sns.boxplot(y=df_clean['Market_Price(INR)'], ax=ax, color='lightgreen')
+                ax.set_title('Price Range Analysis')
+                st.pyplot(fig)
+        
+        with tab2:
+            if 'Fuel_Type' in df_clean.columns:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    fig, ax = plt.subplots(figsize=(8, 5))
+                    sns.boxplot(data=df_clean, x='Fuel_Type', y='Market_Price(INR)', ax=ax, palette='Set3')
+                    ax.set_title('Price by Fuel Type')
+                    plt.xticks(rotation=45)
+                    st.pyplot(fig)
+                
+                with col2:
+                    fuel_counts = df_clean['Fuel_Type'].value_counts()
+                    fig, ax = plt.subplots(figsize=(6, 6))
+                    ax.pie(fuel_counts.values, labels=fuel_counts.index, autopct='%1.1f%%', startangle=90)
+                    ax.set_title('Fuel Type Distribution')
+                    st.pyplot(fig)
+        
+        with tab3:
+            year_avg = df_clean.groupby('Year')['Market_Price(INR)'].mean().sort_index()
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.plot(year_avg.index, year_avg.values, marker='o', linewidth=2, markersize=8, color='#4A90E2')
+            ax.set_xlabel('Year')
+            ax.set_ylabel('Average Price (INR)')
+            ax.set_title('Average Price Trend by Year')
+            ax.grid(True, alpha=0.3)
+            st.pyplot(fig)
+    else:
+        st.warning("Please upload a dataset to view market insights!")
+
+# ============================================
+# PREDICTION HISTORY PAGE
+# ============================================
+elif page == "📋 Prediction History":
+    st.subheader("📋 Prediction History")
+    
+    if len(st.session_state.prediction_history) > 0:
+        pred_df = pd.DataFrame(st.session_state.prediction_history[::-1])
+        
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Predictions", len(st.session_state.prediction_history))
+        with col2:
+            avg_price = pred_df['Predicted_Price'].mean()
+            st.metric("Average Predicted Price", f"₹{avg_price:,.0f}")
+        with col3:
+            if st.button("Clear History"):
+                st.session_state.prediction_history = []
+                st.rerun()
+        
+        st.dataframe(pred_df, use_container_width=True, hide_index=True)
+        
+        st.subheader("📈 Prediction Trends")
+        fig, ax = plt.subplots(figsize=(10, 5))
+        recent = pred_df.head(20)
+        ax.plot(range(len(recent)), recent['Predicted_Price'], marker='o', linewidth=2)
+        ax.set_xlabel('Prediction Number')
+        ax.set_ylabel('Predicted Price (INR)')
+        ax.set_title('Recent Prediction Prices')
+        ax.grid(True, alpha=0.3)
+        st.pyplot(fig)
+    else:
+        st.info("No predictions made yet! Go to Price Prediction to start.")
+
+# ============================================
+# DOWNLOAD REPORT PAGE
+# ============================================
+elif page == "📥 Download Report":
+    st.subheader("📥 Download Reports & Data")
     
     col1, col2 = st.columns(2)
     
     with col1:
-        # Brand selection
-        brand = st.selectbox("Brand", list(CAR_DATABASE.keys()))
+        st.markdown("### 📊 Available Reports")
         
-        if brand in CAR_DATABASE:
-            model = st.selectbox("Model", CAR_DATABASE[brand]['models'])
+        if df_clean is not None:
+            csv_full = df_clean.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "📄 Download Full Dataset (CSV)",
+                csv_full,
+                "full_car_dataset.csv",
+                "text/csv",
+                key='download-csv'
+            )
             
-            # Auto-fill technical specifications
-            if model in CAR_DATABASE[brand]['models']:
-                model_index = CAR_DATABASE[brand]['models'].index(model)
-                car_type = CAR_DATABASE[brand]['car_types'][model_index]
-                engine_cc = CAR_DATABASE[brand]['engine_cc'][model_index]
-                power_hp = CAR_DATABASE[brand]['power_hp'][model_index]
-                seats = CAR_DATABASE[brand]['seats'][model_index]
-                
-                st.text_input("Car Type", value=car_type, disabled=True)
-                st.text_input("Engine Capacity", value=f"{engine_cc} cc", disabled=True)
-                st.text_input("Power", value=f"{power_hp} HP", disabled=True)
-                st.text_input("Seating Capacity", value=f"{seats} seats", disabled=True)
-            else:
-                car_type = "Sedan"
-                engine_cc = 1200
-                power_hp = 80
-                seats = 5
-        
-        current_year = datetime.now().year
-        year = st.number_input("Manufacturing Year", min_value=1990, max_value=current_year, value=current_year-3)
-        
-        fuel_type = st.selectbox("Fuel Type", FUEL_TYPES)
-        transmission = st.selectbox("Transmission", TRANSMISSIONS)
-    
-    with col2:
-        mileage = st.number_input("Mileage (km)", min_value=0, max_value=500000, value=30000, step=1000)
-        color = st.selectbox("Color", COLORS)
-        condition = st.selectbox("Car Condition", CAR_CONDITIONS)
-        owner_type = st.selectbox("Owner Type", OWNER_TYPES)
-        insurance_status = st.selectbox("Insurance Status", INSURANCE_STATUS)
-        registration_city = st.selectbox("Registration City", CITIES)
-    
-    # Return input data
-    input_data = {
-        'Brand': brand,
-        'Model': model,
-        'Car_Type': car_type,
-        'Year': year,
-        'Fuel_Type': fuel_type,
-        'Transmission': transmission,
-        'Mileage': mileage,
-        'Engine_cc': engine_cc,
-        'Power_HP': power_hp,
-        'Seats': seats,
-        'Color': color,
-        'Condition': condition,
-        'Owner_Type': owner_type,
-        'Insurance_Status': insurance_status,
-        'Registration_City': registration_city
-    }
-    
-    return input_data
-
-def calculate_confidence(input_data):
-    """Calculate prediction confidence"""
-    confidence = 80
-    
-    # Increase confidence for newer cars
-    current_year = datetime.now().year
-    if current_year - input_data['Year'] <= 5:
-        confidence += 10
-    
-    # Decrease confidence for high mileage
-    if input_data['Mileage'] > 100000:
-        confidence -= 10
-    
-    return min(95, max(60, confidence))
-
-def add_to_prediction_history(input_data, predicted_price, confidence):
-    """Add prediction to history"""
-    if 'prediction_history' not in st.session_state:
-        st.session_state.prediction_history = []
-    
-    history_entry = {
-        'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        'brand': input_data['Brand'],
-        'model': input_data['Model'],
-        'year': input_data['Year'],
-        'mileage': input_data['Mileage'],
-        'condition': input_data['Condition'],
-        'predicted_price': predicted_price,
-        'confidence': confidence
-    }
-    
-    st.session_state.prediction_history.append(history_entry)
-    
-    # Keep only last 100 predictions
-    if len(st.session_state.prediction_history) > 100:
-        st.session_state.prediction_history = st.session_state.prediction_history[-100:]
-
-def show_prediction_history():
-    """Show prediction history"""
-    st.subheader("📋 Prediction History")
-    
-    if 'prediction_history' not in st.session_state or not st.session_state.prediction_history:
-        st.info("No prediction history yet. Make some predictions to see them here!")
-        return
-    
-    # Convert to DataFrame for better display
-    history_df = pd.DataFrame(st.session_state.prediction_history[::-1])  # Show newest first
-    
-    # Display history
-    st.dataframe(history_df, use_container_width=True)
-    
-    # Show statistics
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        total_predictions = len(st.session_state.prediction_history)
-        st.metric("Total Predictions", total_predictions)
-    with col2:
-        avg_confidence = history_df['confidence'].mean()
-        st.metric("Average Confidence", f"{avg_confidence:.1f}%")
-    with col3:
-        if st.button("Clear History"):
-            st.session_state.prediction_history = []
-            st.rerun()
-    
-    # Show chart of recent predictions
-    if len(history_df) > 1:
-        st.subheader("📈 Recent Prediction Trends")
-        recent_history = history_df.head(10)
-        fig = px.line(recent_history, x='timestamp', y='predicted_price', 
-                      title='Recent Price Predictions', markers=True)
-        st.plotly_chart(fig, use_container_width=True)
-
-# ========================================
-# CSV UPLOAD INTERFACE
-# ========================================
-
-def show_csv_upload_interface():
-    """Show CSV upload interface for dataset learning"""
-    st.subheader("📁 Upload Car Dataset CSV")
-    
-    st.info("""
-    **Upload a CSV file with car data to train the AI model.**
-    Required columns: Brand, Model, Year, Fuel_Type, Transmission, Mileage, Engine_cc, Power_HP, Condition, Price
-    """)
-    
-    uploaded_file = st.file_uploader("Choose CSV file", type=['csv'])
-    
-    if uploaded_file is not None:
-        # Load and process CSV data
-        df = st.session_state.predictor.load_csv_data(uploaded_file)
-        
-        if df is not None:
-            # Train model button
-            if st.button("🚀 Train Model from CSV Data", type="primary"):
-                success = st.session_state.predictor.train_from_csv(df)
-                if success:
-                    st.balloons()
-
-# ========================================
-# CAR COMPARISON INTERFACE
-# ========================================
-
-def show_car_comparison_interface():
-    """Show car comparison interface"""
-    st.subheader("🔍 Compare Multiple Cars")
-    
-    st.info("Compare up to 3 cars side by side to make informed decisions")
-    
-    # Initialize comparison list in session state
-    if 'cars_to_compare' not in st.session_state:
-        st.session_state.cars_to_compare = []
-    
-    # Car selection forms
-    cols = st.columns(3)
-    
-    for i in range(3):
-        with cols[i]:
-            st.write(f"**Car {i+1}**")
-            brand = st.selectbox(f"Brand {i+1}", list(CAR_DATABASE.keys()), key=f"brand_{i}")
+            if result_df is not None:
+                csv_model = result_df.to_csv().encode('utf-8')
+                st.download_button(
+                    "🤖 Download Model Performance (CSV)",
+                    csv_model,
+                    "model_performance.csv",
+                    "text/csv",
+                    key='download-model'
+                )
             
-            if brand in CAR_DATABASE:
-                model = st.selectbox(f"Model {i+1}", CAR_DATABASE[brand]['models'], key=f"model_{i}")
-                year = st.number_input(f"Year {i+1}", min_value=1990, max_value=datetime.now().year, 
-                                     value=datetime.now().year-3, key=f"year_{i}")
-                condition = st.selectbox(f"Condition {i+1}", CAR_CONDITIONS, key=f"condition_{i}")
-                
-                if st.button(f"Add Car {i+1}", key=f"add_{i}"):
-                    car_data = {
-                        'brand': brand,
-                        'model': model,
-                        'year': year,
-                        'condition': condition
-                    }
-                    st.session_state.cars_to_compare.append(car_data)
-                    st.success(f"Added {brand} {model} to comparison!")
-    
-    # Show comparison button
-    if st.session_state.cars_to_compare and st.button("🔄 Compare Cars", type="primary"):
-        compare_cars(st.session_state.cars_to_compare)
-    
-    # Clear comparison button
-    if st.session_state.cars_to_compare:
-        if st.button("Clear Comparison"):
-            st.session_state.cars_to_compare = []
-            st.rerun()
-
-def compare_cars(cars_to_compare):
-    """Compare multiple cars"""
-    comparison_data = []
-    
-    with st.spinner("Comparing cars..."):
-        for i, car in enumerate(cars_to_compare):
-            # Prepare input data for prediction
-            input_data = {
-                'Brand': car['brand'],
-                'Model': car['model'],
-                'Year': car['year'],
-                'Fuel_Type': 'Petrol',
-                'Transmission': 'Manual',
-                'Mileage': 30000,
-                'Engine_cc': 1200,
-                'Power_HP': 80,
-                'Condition': car['condition'],
-                'Seats': 5
-            }
-            
-            # Get predicted price
-            predicted_price = st.session_state.predictor.predict_price(input_data)
-            
-            # Get market prices
-            market_prices, _ = st.session_state.predictor.get_live_prices(car['brand'], car['model'])
-            
-            # Get car specifications
-            if car['brand'] in CAR_DATABASE and car['model'] in CAR_DATABASE[car['brand']]['models']:
-                model_index = CAR_DATABASE[car['brand']]['models'].index(car['model'])
-                car_type = CAR_DATABASE[car['brand']]['car_types'][model_index]
-                engine_cc = CAR_DATABASE[car['brand']]['engine_cc'][model_index]
-                power_hp = CAR_DATABASE[car['brand']]['power_hp'][model_index]
-                seats = CAR_DATABASE[car['brand']]['seats'][model_index]
-            else:
-                car_type = "Unknown"
-                engine_cc = 0
-                power_hp = 0
-                seats = 5
-            
-            comparison_data.append({
-                'Car': f"Car {i+1}",
-                'Brand': car['brand'],
-                'Model': car['model'],
-                'Year': car['year'],
-                'Type': car_type,
-                'Engine (cc)': engine_cc,
-                'Power (HP)': power_hp,
-                'Seats': seats,
-                'Condition': car['condition'],
-                'Predicted Price': predicted_price,
-                'Market Low': market_prices[0],
-                'Market Average': market_prices[1],
-                'Market High': market_prices[2],
-                'Value Score': (predicted_price / market_prices[1]) * 100 if market_prices[1] > 0 else 0
-            })
-    
-    if comparison_data:
-        # Create comparison dataframe
-        comparison_df = pd.DataFrame(comparison_data)
-        
-        st.subheader("📊 Car Comparison Results")
-        st.dataframe(comparison_df, use_container_width=True)
-        
-        # Visual comparison
-        st.subheader("📈 Visual Comparison")
-        
-        # Price comparison chart
-        fig1 = px.bar(comparison_df, 
-                     x='Car', 
-                     y=['Predicted Price', 'Market Average'],
-                     title='Price Comparison',
-                     barmode='group')
-        st.plotly_chart(fig1, use_container_width=True)
-        
-        # Value score comparison
-        fig2 = px.bar(comparison_df,
-                     x='Car',
-                     y='Value Score',
-                     title='Value Score (Higher is Better)',
-                     color='Value Score')
-        st.plotly_chart(fig2, use_container_width=True)
-
-# ========================================
-# MAIN PREDICTION INTERFACE
-# ========================================
-
-def show_prediction_interface():
-    """Show the price prediction interface"""
-    st.subheader("🎯 Car Price Prediction")
-    
-    # Manual input form
-    input_data = show_manual_input_form()
-    
-    if input_data:
-        col1, col2 = st.columns([2, 1])
-        
-        with col1:
-            # Show market prices
-            brand = input_data['Brand']
-            model = input_data['Model']
-            
-            if brand and model:
-                with st.spinner('🔍 Analyzing market trends...'):
-                    prices, sources = st.session_state.predictor.get_live_prices(brand, model)
-                    min_price, avg_price, max_price = prices
-                
-                st.subheader("📊 Market Intelligence")
-                
-                market_col1, market_col2, market_col3 = st.columns(3)
-                
-                with market_col1:
-                    st.metric("Market Low", f"₹{min_price:,.0f}")
-                with market_col2:
-                    st.metric("Market Average", f"₹{avg_price:,.0f}")
-                with market_col3:
-                    st.metric("Market High", f"₹{max_price:,.0f}")
-                
-                st.info(f"**Data Sources:** {', '.join(sources)}")
-        
-        with col2:
-            st.subheader("🤖 AI Prediction")
-            
-            if st.button("🎯 Get Price Prediction", type="primary", use_container_width=True):
-                with st.spinner('🤖 Calculating price...'):
-                    # Get AI prediction
-                    predicted_price = st.session_state.predictor.predict_price(input_data)
-                    
-                    # Show confidence
-                    confidence = calculate_confidence(input_data)
-                    
-                    # Display result
-                    st.success(f"**Predicted Price: ₹{predicted_price:,.0f}**")
-                    st.metric("Confidence Level", f"{confidence}%")
-                    
-                    # Add to prediction history
-                    add_to_prediction_history(input_data, predicted_price, confidence)
-                    
-                    st.balloons()
-
-# ========================================
-# MAIN APPLICATION
-# ========================================
-
-def main():
-    # Initialize session state
-    if 'predictor' not in st.session_state:
-        st.session_state.predictor = EnhancedCarPricePredictor()
-    
-    st.set_page_config(
-        page_title="Advanced Car Price Predictor", 
-        layout="wide", 
-        initial_sidebar_state="expanded"
-    )
-    
-    st.title("🚗 Advanced Car Price Prediction System")
-    st.markdown("### **AI-Powered Price Estimation with Dataset Learning**")
-    
-    # Show brand statistics in sidebar
-    show_brand_statistics()
-    
-    # Navigation
-    with st.sidebar:
-        st.image("https://img.icons8.com/fluency/48/car.png")
-        st.title("Navigation")
-        page = st.radio("Go to", [
-            "🎯 Price Prediction", 
-            "📁 CSV Upload & Learning", 
-            "🔍 Car Comparison", 
-            "📋 Prediction History"
-        ])
-        
-        st.markdown("---")
-        st.subheader("AI Features")
-        st.success("✅ Machine Learning Model")
-        st.success("✅ CSV Dataset Learning")
-        st.success("✅ Real-Time Market Data")
-        st.success("✅ Car Comparison")
-        st.success("✅ Prediction History")
-        
-        st.markdown("---")
-        st.subheader("Model Status")
-        if st.session_state.predictor.is_trained:
-            st.success("✅ Model Trained")
-            # Safe check for training_data
-            if hasattr(st.session_state.predictor, 'training_data') and st.session_state.predictor.training_data is not None:
-                st.info(f"📊 Trained on {st.session_state.predictor.training_records_count} records")
+            summary_stats = df_clean['Market_Price(INR)'].describe().to_frame()
+            csv_summary = summary_stats.to_csv().encode('utf-8')
+            st.download_button(
+                "📈 Download Price Summary (CSV)",
+                csv_summary,
+                "price_summary.csv",
+                "text/csv",
+                key='download-summary'
+            )
         else:
-            st.warning("⚠️ Using Fallback Model")
+            st.info("Upload a dataset to enable downloads!")
     
-    # Page routing
-    if page == "🎯 Price Prediction":
-        show_prediction_interface()
+    with col2:
+        st.markdown("### 📋 Recent Predictions")
+        
+        if len(st.session_state.prediction_history) > 0:
+            pred_df = pd.DataFrame(st.session_state.prediction_history)
+            st.dataframe(pred_df.tail(10), use_container_width=True, hide_index=True)
+            
+            csv_pred = pred_df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                "💾 Download Predictions History",
+                csv_pred,
+                "prediction_history.csv",
+                "text/csv",
+                key='download-pred'
+            )
+        else:
+            st.info("No predictions made yet!")
     
-    elif page == "📁 CSV Upload & Learning":
-        show_csv_upload_interface()
-    
-    elif page == "🔍 Car Comparison":
-        show_car_comparison_interface()
-    
-    elif page == "📋 Prediction History":
-        show_prediction_history()
-
-if __name__ == "__main__":
-    main()
+    st.markdown("---")
+    st.success("💡 Tip: You can copy data directly from tables and paste into Excel!")
