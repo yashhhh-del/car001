@@ -363,10 +363,7 @@ COMPREHENSIVE_CAR_DATABASE = {
 
 class IndianCarPricePredictor:
     def __init__(self):
-        self.model = None
-        self.encoders = {}
         self.dataset_df = None
-        self.is_trained = False
         
     def load_csv_dataset(self, uploaded_file):
         """Load and process uploaded CSV"""
@@ -466,75 +463,83 @@ class IndianCarPricePredictor:
     
     def predict_price(self, brand, model, year, km_driven, fuel_type, transmission, 
                      ownership, condition, city):
-        """Main prediction function"""
+        """Main prediction function - returns (min_price, fair_price, max_price, base_price)"""
         
-        # Get base price
-        base_price = self.get_base_price(brand, model)
-        
-        # Check dataset for similar entries
-        dataset_reference = None
-        if self.dataset_df is not None:
-            try:
-                # Try to find similar cars in dataset
-                df_lower = self.dataset_df.copy()
-                
-                # Safely check for matching entries
-                brand_match = df_lower.get('brand', pd.Series(dtype=str)).astype(str).str.lower() == brand.lower()
-                
-                # Try to match model (partial match)
-                model_col = df_lower.get('model', pd.Series(dtype=str)).astype(str).str.lower()
-                model_match = model_col.str.contains(model.lower()[:10], na=False, regex=False)
-                
-                # Year match (within 2 years)
-                year_col = pd.to_numeric(df_lower.get('year', pd.Series(dtype=float)), errors='coerce')
-                year_match = abs(year_col - year) <= 2
-                
-                similar = df_lower[brand_match & model_match & year_match]
-                
-                if len(similar) > 0:
-                    price_col = pd.to_numeric(similar.get('price', pd.Series(dtype=float)), errors='coerce')
-                    dataset_reference = price_col.median()
+        try:
+            # Get base price
+            base_price = self.get_base_price(brand, model)
+            
+            # Check dataset for similar entries
+            dataset_reference = None
+            if self.dataset_df is not None:
+                try:
+                    # Try to find similar cars in dataset
+                    df_lower = self.dataset_df.copy()
                     
-            except Exception as e:
-                # Silently handle any dataset errors
-                pass
-        
-        # Calculate depreciated price
-        fair_price = self.calculate_depreciation(base_price, year, km_driven, 
-                                                  ownership, condition)
-        
-        # Apply city factor
-        city_factor = INDIAN_CITIES.get(city, 1.0)
-        fair_price = int(fair_price * city_factor)
-        
-        # Apply fuel type adjustment
-        fuel_adjustments = {
-            'Petrol': 1.0,
-            'Diesel': 1.08,
-            'CNG': 0.95,
-            'Electric': 1.12,
-            'Hybrid': 1.15
-        }
-        fair_price = int(fair_price * fuel_adjustments.get(fuel_type, 1.0))
-        
-        # Apply transmission adjustment
-        if transmission in ['Automatic', 'CVT', 'DCT', 'AMT']:
-            fair_price = int(fair_price * 1.08)
-        
-        # Use dataset reference if available and reasonable
-        if dataset_reference and not pd.isna(dataset_reference):
-            try:
-                dataset_reference = float(dataset_reference)
-                if abs(dataset_reference - fair_price) / fair_price < 0.3:
-                    fair_price = int((fair_price + dataset_reference) / 2)
-            except:
-                pass
-        
-        # Calculate min and max range
-        min_price = int(fair_price * 0.88)
-        max_price = int(fair_price * 1.12)
-        
-        return min_price, fair_price, max_price, base_price
+                    # Safely check for matching entries
+                    brand_match = df_lower.get('brand', pd.Series(dtype=str)).astype(str).str.lower() == brand.lower()
+                    
+                    # Try to match model (partial match)
+                    model_col = df_lower.get('model', pd.Series(dtype=str)).astype(str).str.lower()
+                    model_match = model_col.str.contains(model.lower()[:10], na=False, regex=False)
+                    
+                    # Year match (within 2 years)
+                    year_col = pd.to_numeric(df_lower.get('year', pd.Series(dtype=float)), errors='coerce')
+                    year_match = abs(year_col - year) <= 2
+                    
+                    similar = df_lower[brand_match & model_match & year_match]
+                    
+                    if len(similar) > 0:
+                        price_col = pd.to_numeric(similar.get('price', pd.Series(dtype=float)), errors='coerce')
+                        dataset_reference = price_col.median()
+                        
+                except Exception as e:
+                    # Silently handle any dataset errors
+                    pass
+            
+            # Calculate depreciated price
+            fair_price = self.calculate_depreciation(base_price, year, km_driven, 
+                                                      ownership, condition)
+            
+            # Apply city factor
+            city_factor = INDIAN_CITIES.get(city, 1.0)
+            fair_price = int(fair_price * city_factor)
+            
+            # Apply fuel type adjustment
+            fuel_adjustments = {
+                'Petrol': 1.0,
+                'Diesel': 1.08,
+                'CNG': 0.95,
+                'Electric': 1.12,
+                'Hybrid': 1.15
+            }
+            fair_price = int(fair_price * fuel_adjustments.get(fuel_type, 1.0))
+            
+            # Apply transmission adjustment
+            if transmission in ['Automatic', 'CVT', 'DCT', 'AMT']:
+                fair_price = int(fair_price * 1.08)
+            
+            # Use dataset reference if available and reasonable
+            if dataset_reference and not pd.isna(dataset_reference):
+                try:
+                    dataset_reference = float(dataset_reference)
+                    if abs(dataset_reference - fair_price) / fair_price < 0.3:
+                        fair_price = int((fair_price + dataset_reference) / 2)
+                except:
+                    pass
+            
+            # Calculate min and max range
+            min_price = int(fair_price * 0.88)
+            max_price = int(fair_price * 1.12)
+            
+            return min_price, fair_price, max_price, base_price
+            
+        except Exception as e:
+            # If anything fails, return safe defaults
+            st.error(f"Prediction error: {str(e)}")
+            base = self.get_base_price(brand, model)
+            fair = int(base * 0.5)  # Assume 50% depreciation as fallback
+            return int(fair * 0.88), fair, int(fair * 1.12), base
     
     def get_pricing_factors(self, brand, model, year, km_driven, ownership, condition, city):
         """Get factors that influenced pricing"""
