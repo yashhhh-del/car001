@@ -511,15 +511,19 @@ class EnhancedCarPricePredictor:
                 base_price = base_prices[1]  # Use average price
                 
                 # Generate multiple records with variations
-                for _ in range(10):  # Reduced to 10 for better performance
+                for _ in range(8):  # Reduced to 8 for better performance
                     year = np.random.randint(max(1990, current_year-30), current_year+1)
                     age = current_year - year
                     
-                    # FIXED: Ensure mileage range is valid
+                    # FIXED: Completely safe mileage calculation
                     min_mileage = 1000
-                    max_mileage = min(300000, max(15000 * age, 2000))  # Ensure max > min
+                    max_mileage_possible = 15000 * age
+                    max_mileage = min(300000, max_mileage_possible)
+                    
+                    # Ensure max_mileage is always greater than min_mileage
                     if max_mileage <= min_mileage:
-                        max_mileage = min_mileage + 1000
+                        max_mileage = min_mileage + 5000
+                    
                     mileage = np.random.randint(min_mileage, max_mileage)
                     
                     # Condition probabilities
