@@ -371,13 +371,29 @@ class IndianCarPricePredictor:
     def load_csv_dataset(self, uploaded_file):
         """Load and process uploaded CSV"""
         try:
+            # Reset file pointer to beginning
+            uploaded_file.seek(0)
             self.dataset_df = pd.read_csv(uploaded_file)
+            
             # Clean column names
-            self.dataset_df.columns = self.dataset_df.columns.str.strip().str.lower()
-            st.success(f"✅ Dataset loaded: {len(self.dataset_df)} records")
+            self.dataset_df.columns = self.dataset_df.columns.str.strip().str.lower().str.replace(' ', '_')
+            
+            # Ensure required columns exist
+            required_cols = ['brand', 'model', 'year', 'price']
+            missing_cols = [col for col in required_cols if col not in self.dataset_df.columns]
+            
+            if missing_cols:
+                st.warning(f"⚠️ CSV missing columns: {missing_cols}. Basic prediction will be used.")
+                self.dataset_df = None
+                return False
+            
+            st.success(f"✅ Dataset loaded successfully: {len(self.dataset_df)} records")
             return True
+            
         except Exception as e:
-            st.error(f"Error loading CSV: {str(e)}")
+            st.error(f"❌ Error loading CSV: {str(e)}")
+            st.info("💡 Tip: Ensure CSV has columns: brand, model, year, price")
+            self.dataset_df = None
             return False
     
     def get_base_price(self, brand, model):
@@ -459,14 +475,28 @@ class IndianCarPricePredictor:
         dataset_reference = None
         if self.dataset_df is not None:
             try:
-                similar = self.dataset_df[
-                    (self.dataset_df['brand'].str.lower() == brand.lower()) &
-                    (self.dataset_df['model'].str.lower().str.contains(model.lower()[:10])) &
-                    (abs(self.dataset_df['year'] - year) <= 2)
-                ]
+                # Try to find similar cars in dataset
+                df_lower = self.dataset_df.copy()
+                
+                # Safely check for matching entries
+                brand_match = df_lower.get('brand', pd.Series(dtype=str)).astype(str).str.lower() == brand.lower()
+                
+                # Try to match model (partial match)
+                model_col = df_lower.get('model', pd.Series(dtype=str)).astype(str).str.lower()
+                model_match = model_col.str.contains(model.lower()[:10], na=False, regex=False)
+                
+                # Year match (within 2 years)
+                year_col = pd.to_numeric(df_lower.get('year', pd.Series(dtype=float)), errors='coerce')
+                year_match = abs(year_col - year) <= 2
+                
+                similar = df_lower[brand_match & model_match & year_match]
+                
                 if len(similar) > 0:
-                    dataset_reference = similar['price'].median()
-            except:
+                    price_col = pd.to_numeric(similar.get('price', pd.Series(dtype=float)), errors='coerce')
+                    dataset_reference = price_col.median()
+                    
+            except Exception as e:
+                # Silently handle any dataset errors
                 pass
         
         # Calculate depreciated price
@@ -601,8 +631,9 @@ def main():
         st.markdown("### 📁 Upload Dataset (Optional)")
         uploaded_file = st.file_uploader("Upload CSV with car data", type=['csv'])
         
-        if uploaded_file:
-            st.session_state.predictor.load_csv_dataset(uploaded_file)
+        if uploaded_file is not None:
+            if st.button("Load Dataset"):
+                st.session_state.predictor.load_csv_dataset(uploaded_file)
     
     # Main Tabs
     tab1, tab2, tab3 = st.tabs(["🎯 Single Car Prediction", "⚖️ Compare Cars", "📊 Database Info"])
@@ -928,3 +959,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
